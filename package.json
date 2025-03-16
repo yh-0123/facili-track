@@ -1,7 +1,7 @@
 {
   "name": "facili-track",
   "version": "0.1.0",
-  "homepage": "https://yh-0123.github.io/react-gh-pages",
+  "homepage": "https://yh-0123.github.io/facili-track",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -20,7 +20,7 @@
   },
   "scripts": {
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
+    "deploy": "facili-track -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
