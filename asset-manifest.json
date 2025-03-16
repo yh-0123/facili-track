@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/facili-track/static/css/main.23c3ffdb.css",
+    "main.js": "/facili-track/static/js/main.78ddef14.js",
+    "index.html": "/facili-track/index.html",
+    "main.23c3ffdb.css.map": "/facili-track/static/css/main.23c3ffdb.css.map",
+    "main.78ddef14.js.map": "/facili-track/static/js/main.78ddef14.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.23c3ffdb.css",
+    "static/js/main.78ddef14.js"
+  ]
+}
