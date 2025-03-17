@@ -1,0 +1,5 @@
+const UserRoles = {
+    Admin: 0,
+    FacilityWorker: 1,
+    Resident: 2
+};
