@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import { useState } from "react";
-import Dashboard from "./pages/dashboard";
-import FacilityAssets from "./pages/facilityAssets";
-import Tickets from "./pages/tickets";
-import CreateAccount from "./pages/createAccount";
+import Dashboard from "./pages/Dashboard";
+import FacilityAssets from "./pages/FacilityAssets";
+import Tickets from "./pages/Tickets";
+import CreateAccount from "./pages/CreateAccount";
 import UserLogin from "./pages/userManagement/userLogin";
 
 function App() {
