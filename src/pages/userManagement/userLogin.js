@@ -1,13 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
-import supabase from "../../backend/dbClient/SupaBaseClient"; // Import Supabase client
+import supabase from "../../backend/DBClient/SupaBaseClient"; // Import Supabase client
 import Cookies from "js-cookie"; // Import js-cookie for managing cookies
 import "./userLogin.css"; // Import CSS file
 
-const UserLogin = () => {
+const UserLogin = ({ setIsLoggedIn }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate(); // Initialize useNavigate for redirection
+
+  useEffect(() => {
+    // Check if user cookie exists
+    const userCookie = Cookies.get("user");
+    if (userCookie) {
+      setIsLoggedIn(true);
+    }
+  }, []); // Empty dependency array to run only once on mount
 
   const handleLogin = async () => {
     // Basic validation
@@ -18,11 +26,12 @@ const UserLogin = () => {
 
     try {
       // Query the custom table for the user
+
       const { data, error } = await supabase
         .from("Users")
         .select("*")
-        .eq("userEmail", email);
-      //.single(); // Fetch a single user with the matching email
+        .eq("userEmail", email)
+        .single(); // Ensure the data is not returned as an array
 
       if (error) {
         alert(`Login failed: ${error.message}`);
@@ -35,7 +44,8 @@ const UserLogin = () => {
       }
 
       // Validate the password (if stored as plain text, compare directly; otherwise, use bcrypt)
-      if (data.password !== password) {
+      if (data.userPassword !== password) {
+        // Access data directly
         alert("Invalid password.");
         return;
       }
@@ -44,7 +54,10 @@ const UserLogin = () => {
       console.log("User logged in:", data);
 
       // Store user session in cookies
-      Cookies.set("user", JSON.stringify(data), { expires: 7 }); // Store session for 7 days
+      Cookies.set("user", JSON.stringify(data.userName), { expires: 7 }); // Store session for 7 days
+
+      // Set isLoggedIn to true
+      setIsLoggedIn(true);
 
       // Redirect to the dashboard page
       alert("Login successful!");

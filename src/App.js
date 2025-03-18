@@ -1,13 +1,31 @@
-import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
-import { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Link,
+  Navigate,
+} from "react-router-dom";
+import { useState, useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
-import FacilityAssets from "./pages/FacilityAssets";
-import Tickets from "./pages/Tickets";
-import CreateAccount from "./pages/CreateAccount";
+import FacilityAssets from "./pages/facilityAssets";
+import Tickets from "./pages/tickets";
+import CreateAccount from "./pages/createAccount";
 import UserLogin from "./pages/userManagement/userLogin";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
+
+  useEffect(() => {
+    const userCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("user="));
+    if (userCookie) {
+      setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, []); // Add an empty dependency array to run only once
+
   return (
     <Router>
       <div className="app-container">
@@ -33,11 +51,32 @@ function App() {
 
         <div className="content">
           <Routes>
-            <Route path="/" element={<UserLogin />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/assets" element={<FacilityAssets />} />
-            <Route path="/tickets" element={<Tickets />} />
-            <Route path="/create-account" element={<CreateAccount />} />
+            <Route
+              path="/"
+              element={
+                isLoggedIn ? (
+                  <Navigate to="/dashboard" />
+                ) : (
+                  <UserLogin setIsLoggedIn={setIsLoggedIn} />
+                )
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={isLoggedIn ? <Dashboard /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/assets"
+              element={isLoggedIn ? <FacilityAssets /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/tickets"
+              element={isLoggedIn ? <Tickets /> : <Navigate to="/" />}
+            />
+            <Route
+              path="/create-account"
+              element={isLoggedIn ? <CreateAccount /> : <Navigate to="/" />}
+            />
           </Routes>
         </div>
       </div>
