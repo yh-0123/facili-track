@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
 import Cookies from "js-cookie"; // Import js-cookie for managing cookies
+import "./index.css"; // Import CSS file
+import PageHeader from "./pageHeader";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,7 +17,12 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  return <h1>Dashboard Page</h1>;
+  return  <div className="dashboard-page">
+  <div className="content">
+    <PageHeader title="Dashboard" />
+  </div>
+</div>
+
 };
 
 export default Dashboard;

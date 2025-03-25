@@ -1,0 +1,97 @@
+.facility-assets-page {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+  }
+  
+  /* Updated search and button layout */
+  .search-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  /* Search input and button in one row */
+  .search-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-grow: 1;
+  }
+  
+  .search-bar-container input {
+    padding: 10px;
+    flex: 0.5;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .search-bar-container button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+  
+  /* Add New Asset Button */
+  .add-asset-btn {
+    background-color: #d18473;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  
+  /* Tab Navigation */
+  .tabs {
+    display: flex;
+    gap: 20px;
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .active-tab {
+    font-weight: bold;
+    border-bottom: 2px solid #007bff;
+  }
+  
+  /* Grid Layout for Assets */
+  .asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .asset-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .view-details {
+    color: #d18473;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+    background: none; /* Removes background color */
+    border: none; /* Removes border */
+    padding: 0; /* Removes padding */
+    transition: color 0.3s ease;
+  }
+
+  
+.view-details:hover {
+  color: #b35a42; /* Darker shade on hover */
+}
+
+.view-details:active {
+  color: #8a3d2b; /* Even darker shade when clicked */
+}
+  

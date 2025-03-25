@@ -1,0 +1,184 @@
+.add-asset-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 75vh;
+    padding-top: 0px;
+    
+}
+
+/* Header */
+.add-asset-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+/*Button Group */
+.button-group {
+    display: flex;
+    justify-content: space-between; /* Ensures Back is left-aligned, Next is right-aligned */
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* Back Button */
+.back-button {
+    width: 140px;
+    height: 45px;
+    background: #d46a4f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
+}
+
+.back-button:hover {
+    background: #c15e48;
+}
+
+/* Category Grid */
+.category-grid {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    max-width: 1000px;
+    max-height: 500px;
+    margin-bottom: 30px;
+}
+
+.category-grid div {
+    flex: none;
+    min-width: 150px;
+    text-align: center;
+    display:flex
+}
+
+/* Category Card */
+.category-card {
+    width: 170px;
+    height:300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f2f2f2;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.category-card:hover {
+    background: #ffede6;
+    color: #d46a4f;
+    border: 2px solid #d46a4f;
+}
+
+/* Selected Category */
+.category-card.selected {
+    background: #ffede6;
+    color: #d46a4f;
+    border: 2px solid #d46a4f;
+}
+
+/* Next Button & Submit Button*/
+.next-button,
+.submit-button {
+    width: 140px;
+    height: 45px;
+    background: #d46a4f;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-align: center;
+    padding: 10px 20px;
+}
+
+.submit-button{
+    max-width: 250px;
+    width:fit-content;
+    height: 45px;
+}
+
+.next-button:hover,
+.submit-button:hover {
+    background: #c15e48;
+}
+
+.next-button:disabled,
+.back-button:disabled,
+.submit-button:disabled  {
+    background: #e0e0e0;
+    cursor: not-allowed;
+}
+
+/* Form Container */
+.add-asset-container {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 50%;
+    max-width: 600px;
+    margin-top: 20px;
+}
+
+/* Form Title */
+.add-asset-container h2 {
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Form Input Fields */
+.asset-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width:600px;
+}
+
+.asset-form input,
+.asset-form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    background-color: #ffffff;
+}
+
+/* Radio Buttons for Asset Status */
+.asset-status {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.asset-status label {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.radio-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}

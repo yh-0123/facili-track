@@ -28,7 +28,7 @@ const UserLogin = ({ setIsLoggedIn }) => {
       // Query the custom table for the user
 
       const { data, error } = await supabase
-        .from("Users")
+        .from("users")
         .select("*")
         .eq("userEmail", email)
         .single(); // Ensure the data is not returned as an array

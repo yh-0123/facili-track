@@ -1,5 +1,8 @@
 /* Page container */
 .create-account-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     width: 100%;
     max-width: 600px;
     margin: 40px auto;
@@ -98,11 +101,12 @@ html, body {
     background: #e39274;
     color: white;
     font-size: 1rem;
-    padding: 12px;
+    padding: 10px 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     transition: 0.3s ease;
+    width: 100%;
 }
 
 .create-account-btn:hover {
@@ -126,3 +130,28 @@ html, body {
 .form.input{
     margin: 5%;
 }
+
+.account-form {
+    background-color: white;
+    padding: 20px 40px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 400px;
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+  }
+  
+  textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    resize: none;
+    font-size: 14px;
+  }
+  

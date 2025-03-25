@@ -1,0 +1,86 @@
+/* index.css */
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f5f7f9;
+}
+
+.app-container {
+  display: flex;
+  height: 100vh; /* Full viewport height */
+  width: 100%;
+  overflow: hidden; /* Prevents scrolling of the container itself */
+}
+
+.page-header {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 200px; /* Adjust based on sidebar width */
+  right: 0;
+  height: 60px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 20px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.sidebar {
+  width: 200px;
+  background-color: #004d4d;
+  color: white;
+  padding: 20px 0;
+}
+
+.sidebar h2 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.sidebar a {
+  color: white;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.sidebar ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 15px 20px;
+  cursor: pointer;
+}
+
+.sidebar li.active, .sidebar li:hover {
+  background-color: #017575;
+  border-radius: 5px;
+}
+
+.content {
+  flex: 1;
+  padding-top: 60px; /* Adjust to match the top bar height */
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.dashboard-page .content {
+  padding-top: 20px;  /* Adjust as needed */
+}
+
+.pagination {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
