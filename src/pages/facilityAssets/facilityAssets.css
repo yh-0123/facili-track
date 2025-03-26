@@ -1,7 +1,10 @@
 .facility-assets-page {
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    flex: 1;
+    padding-top: 60px; /* Adjust to match the top bar height */
+    padding-left: 30px;
+    padding-right: 30px;
   }
   
   /* Updated search and button layout */

@@ -1,11 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, User } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./profileDropdown.css";
 
 const ProfileDropdown = ({ userName = "Alex Ong" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Function to handle logout
+  const handleLogout = () => {
+    // Clear any authentication data (e.g., tokens, user info) from localStorage or sessionStorage
+    localStorage.removeItem("user"); // Replace with your token or auth data key
+    sessionStorage.removeItem("user"); // Replace with your token or auth data key
+
+    // Redirect to the login page
+    navigate("/login"); // Adjust the login route if necessary
+  };
 
   // Close dropdown if clicked outside
   useEffect(() => {
@@ -37,8 +48,16 @@ const ProfileDropdown = ({ userName = "Alex Ong" }) => {
 
       {isOpen && (
         <div className="dropdown-menu" role="menu">
-          <Link to="/view-profile" className="dropdown-item">View Profile</Link>
-          <button className="dropdown-item" role="menuitem">Logout</button>
+          <Link to="/view-profile" className="dropdown-item">
+            View Profile
+          </Link>
+          <button
+            className="dropdown-item"
+            role="menuitem"
+            onClick={handleLogout} // Trigger the logout logic
+          >
+            Logout
+          </button>
           <button className="dropdown-item deactivate" role="menuitem">
             Deactivate Account
           </button>

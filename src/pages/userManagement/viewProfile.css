@@ -1,20 +1,20 @@
 /* Center the profile section */
 .profile1-container {
   display: flex;
+  width: 100%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 80vh;
-  background-color: #eaf4f4;
+  
 }
 
-/* Profile title */
 .profile1-container h2 {
   font-size: 24px;
   font-weight: bold;
 }
 
-/* White box for form */
+/* White box for profile */
 .profile1-box {
   background: white;
   padding: 30px;
@@ -22,6 +22,30 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   width: 40%;
   text-align: left;
+  width: 350px; /* Set a width to maintain consistency */
+}
+
+.profile1-box p {
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+/* Buttons */
+.edit-button, .change-password, .save-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #e49b79;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.edit-button:hover, .change-password:hover, .save-button:hover {
+  background-color: #d48568;
 }
 
 /* Input group */
@@ -36,25 +60,54 @@
 }
 
 .input-group input {
-  width: 100%;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
+  width: calc(100% - 20px); /* Ensures padding doesn't cause overflow */
 }
 
-/* Save Changes button */
-.save-button {
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 120px;
+}
+
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;  /* Fixed width to prevent stretching */
+  max-width: 90%; /* Responsive behavior */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.modal h3 {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.close-button {
   width: 100%;
   padding: 12px;
-  background-color: #e49b79;
-  color: white;
+  background-color: #ccc;
+  color: black;
   border: none;
   border-radius: 5px;
   font-size: 16px;
   cursor: pointer;
   margin-top: 10px;
+  text-align: center;
 }
 
-.save-button:hover {
-  background-color: #d48568;
+.close-button:hover {
+  background-color: #b5b5b5;
 }

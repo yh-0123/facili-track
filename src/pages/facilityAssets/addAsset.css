@@ -5,7 +5,9 @@
     justify-content: center;
     width: 100%;
     min-height: 75vh;
-    padding-top: 0px;
+    padding-top: 0px; /* Adjust to match the top bar height */
+    padding-left: 30px;
+    padding-right: 30px;
     
 }
 
@@ -14,6 +16,8 @@
     width: 100%;
     display: flex;
     align-items: center;
+    padding-top: 60px; 
+    padding-bottom: 80px;
 }
 
 /*Button Group */

@@ -9,7 +9,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     // Check if the user session exists in cookies
-    const user = Cookies.get("user");
+    const user = Cookies.get("userData");
     if (!user) {
       // Redirect to login page if no session exists
       alert("You are not logged in. Redirecting to login page.");
@@ -17,12 +17,13 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  return  <div className="dashboard-page">
-  <div className="content">
-    <PageHeader title="Dashboard" />
-  </div>
-</div>
-
+  return (
+    <div className="dashboard-page">
+      <div className="content">
+        <PageHeader title="Dashboard" />
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard;

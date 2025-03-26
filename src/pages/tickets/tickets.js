@@ -5,7 +5,6 @@ import PageHeader from "../pageHeader";
 import '../index.css';
 import './tickets.css';
 
-
 const ticketsData = [
   { id: 1, title: 'Light is not working in the carpark', status: 'Not Assigned', time: 'Submitted on 2 Jan 2025' },
   { id: 2, title: 'Aircond in Gym is leaking water', status: 'Not Assigned', time: 'Posted at 1:05 PM' },
@@ -17,18 +16,30 @@ const ticketsData = [
 ];
 
 const Tickets = () => {
-  const [activeFilter, setActiveFilter] = useState('New');
+  const [activeFilter, setActiveFilter] = useState('Not Assigned');
   const [pageNumber, setPageNumber] = useState(1);
   const ticketsPerPage = 5;
-  
-  const filters = ['New', 'Assigned', 'Open', 'Resolved'];
+
+  const filters = ['Not Assigned', 'Assigned', 'Resolved'];
   const totalPages = Math.ceil(ticketsData.length / ticketsPerPage);
-  
+
+  const filterTickets = () => {
+    if (activeFilter === 'Not Assigned') {
+      return ticketsData.filter(ticket => ticket.status === 'Not Assigned');
+    } else if (activeFilter === 'Assigned') {
+      return ticketsData.filter(ticket => ticket.status.includes('Assigned to'));
+    } else if (activeFilter === 'Resolved') {
+      return ticketsData.filter(ticket => ticket.status === 'Resolved');
+    }
+    return ticketsData;
+  };
+
+  const filteredTickets = filterTickets();
   const startIndex = (pageNumber - 1) * ticketsPerPage;
-  const displayedTickets = ticketsData.slice(startIndex, startIndex + ticketsPerPage);
+  const displayedTickets = filteredTickets.slice(startIndex, startIndex + ticketsPerPage);
 
   const nextPage = () => {
-    if (pageNumber < totalPages) {
+    if (pageNumber < Math.ceil(filteredTickets.length / ticketsPerPage)) {
       setPageNumber(pageNumber + 1);
     }
   };
@@ -57,7 +68,10 @@ const Tickets = () => {
             <button
               key={filter}
               className={filter === activeFilter ? 'active' : ''}
-              onClick={() => setActiveFilter(filter)}
+              onClick={() => {
+                setActiveFilter(filter);
+                setPageNumber(1);
+              }}
             >
               {filter}
             </button>
@@ -65,18 +79,22 @@ const Tickets = () => {
         </div>
 
         <div className="tickets-list">
-          {displayedTickets.map(ticket => (
-            <div key={ticket.id} className="ticket-card">
-              <div className="ticket-header">
-                <FaCircle className="red-dot" />
-                <strong>Ticket ID {ticket.id}</strong>
+          {displayedTickets.length > 0 ? (
+            displayedTickets.map(ticket => (
+              <div key={ticket.id} className="ticket-card">
+                <div className="ticket-header">
+                  <FaCircle className="red-dot" />
+                  <strong>Ticket ID {ticket.id}</strong>
+                </div>
+                <p className="ticket-title">{ticket.title}</p>
+                <p className="ticket-status">{ticket.status}</p>
+                <p className="ticket-time">{ticket.time}</p>
+                <Link to={`/ticket/${ticket.id}`} className="view-ticket">View Ticket</Link>
               </div>
-              <p className="ticket-title">{ticket.title}</p>
-              <p className="ticket-status">{ticket.status}</p>
-              <p className="ticket-time">{ticket.time}</p>
-              <Link to={`/ticket/${ticket.id}`} className="view-ticket">View Ticket</Link>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p>No tickets available.</p>
+          )}
         </div>
 
         <div className="pagination">
@@ -84,8 +102,8 @@ const Tickets = () => {
             <button type="button" className="back-button" onClick={prevPage} disabled={pageNumber === 1}>
               Previous
             </button>
-            <span>Page {pageNumber} of {totalPages}</span>
-            <button type="button" className="next-button" onClick={nextPage} disabled={pageNumber === totalPages}>
+            <span>Page {pageNumber} of {Math.ceil(filteredTickets.length / ticketsPerPage)}</span>
+            <button type="button" className="next-button" onClick={nextPage} disabled={pageNumber === Math.ceil(filteredTickets.length / ticketsPerPage)}>
               Next
             </button>
           </div>

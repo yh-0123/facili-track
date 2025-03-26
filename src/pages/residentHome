@@ -1,0 +1,38 @@
+// Homepage for Resident
+
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { FaPlusCircle, FaHistory } from "react-icons/fa";
+import Cookies from "js-cookie";
+
+const ResidentHome = () => {
+  const navigate = useNavigate();
+  const userData = JSON.parse(Cookies.get("user") || "{}");
+
+  return (
+    <div className="h-screen bg-teal-800 text-white flex flex-col items-center justify-center p-4">
+      <div className="absolute top-4 right-4 bg-white text-black px-4 py-2 rounded-full flex items-center">
+        <span className="mr-2">{userData.userName || "User"}</span>
+        <span className="cursor-pointer">⬇️</span>
+      </div>
+
+      <h1 className="text-4xl font-bold">FaciliTrack</h1>
+      <div className="mt-8 flex flex-col gap-4 w-full max-w-xs">
+        <button
+          className="flex items-center gap-2 p-3 bg-white text-teal-800 rounded-lg w-full text-center justify-center font-semibold shadow-md"
+          onClick={() => navigate("/create-ticket")}
+        >
+          <FaPlusCircle /> Create New Ticket
+        </button>
+        <button
+          className="flex items-center gap-2 p-3 bg-white text-teal-800 rounded-lg w-full text-center justify-center font-semibold shadow-md"
+          onClick={() => navigate("/ticket-history")}
+        >
+          <FaHistory /> View Ticket History
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ResidentHome;

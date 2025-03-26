@@ -49,31 +49,33 @@ const CreateAccount = () => {
 
   return (
     <div className="create-account-page">
-      <PageHeader title="Create New User Account" />
-      <div className="tabs">
-        <span
-          className={userRole === USER_ROLES.RESIDENT ? "active-tab" : ""}
-          onClick={() => setUserRole(USER_ROLES.RESIDENT)}
-          style={{ cursor: "pointer" }}
-        >
-          New Resident
-        </span>
-        <span
-          className={
-            userRole === USER_ROLES.FACILITY_WORKER ? "active-tab" : ""
-          }
-          onClick={() => setUserRole(USER_ROLES.FACILITY_WORKER)}
-          style={{ cursor: "pointer" }}
-        >
-          New Facility Worker
-        </span>
-        <span
-          className={userRole === USER_ROLES.ADMIN ? "active-tab" : ""}
-          onClick={() => setUserRole(USER_ROLES.ADMIN)}
-          style={{ cursor: "pointer" }}
-        >
-          New Admin
-        </span>
+      <div className="content">
+        <h2>Create New User Account</h2>
+        <div className="tabs">
+          <span
+            className={userRole === USER_ROLES.RESIDENT ? "active-tab" : ""}
+            onClick={() => setUserRole(USER_ROLES.RESIDENT)}
+            style={{ cursor: "pointer" }}
+          >
+            New Resident
+          </span>
+          <span
+            className={
+              userRole === USER_ROLES.FACILITY_WORKER ? "active-tab" : ""
+            }
+            onClick={() => setUserRole(USER_ROLES.FACILITY_WORKER)}
+            style={{ cursor: "pointer" }}
+          >
+            New Facility Worker
+          </span>
+          <span
+            className={userRole === USER_ROLES.ADMIN ? "active-tab" : ""}
+            onClick={() => setUserRole(USER_ROLES.ADMIN)}
+            style={{ cursor: "pointer" }}
+          >
+            New Admin
+          </span>
+        </div>
       </div>
       <form onSubmit={handleSubmit} className="account-form">
         <label>Username</label>

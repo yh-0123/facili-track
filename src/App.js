@@ -13,11 +13,11 @@ import CreateAccount from "./pages/userManagement/createAccount";
 import UserLogin from "./pages/userManagement/userLogin";
 import ViewProfile from "./pages/userManagement/viewProfile";
 import ProfileDropdown from "./pages/userManagement/profileDropdown";
-import AddAsset from './pages/facilityAssets/addAsset';
-import AssetDetails from './pages/facilityAssets/assetDetails';
-import TicketDetails from './pages/tickets/ticketDetails';
+import AddAsset from "./pages/facilityAssets/addAsset";
+import AssetDetails from "./pages/facilityAssets/assetDetails";
+import TicketDetails from "./pages/tickets/ticketDetails";
+import ResidentHome from "./pages/residentHome"; // Import Resident Home
 import "./pages/index.css";
-
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
@@ -25,7 +25,7 @@ function App() {
   useEffect(() => {
     const userCookie = document.cookie
       .split("; ")
-      .find((row) => row.startsWith("user="));
+      .find((row) => row.startsWith("userData="));
     if (userCookie) {
       setIsLoggedIn(true);
     } else {
@@ -96,12 +96,11 @@ function App() {
               path="/view-profile"
               element={isLoggedIn ? <ViewProfile /> : <Navigate to="/" />}
             />
-            <Route path="/add-asset" element={<AddAsset />} 
-            />
-            <Route path="/asset-details/:id" element={<AssetDetails />} 
-            />
-            <Route path="/ticket/:id" element={<TicketDetails />}
-            />
+            <Route path="/add-asset" element={<AddAsset />} />
+            <Route path="/asset-details/:id" element={<AssetDetails />} />
+            <Route path="/ticket/:id" element={<TicketDetails />} />
+            <Route path="/resident-home" element={<ResidentHome />} />
+            <Route path="/login" element={<UserLogin />} />
           </Routes>
         </div>
       </div>

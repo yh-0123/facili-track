@@ -1,53 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaCircle } from 'react-icons/fa';
+import { FaSearch } from "react-icons/fa";
 import "./facilityAssets.css";
 import "../index.css";
 import PageHeader from "../pageHeader";
+import supabase from "../../backend/DBClient/SupaBaseClient"; // Import your Supabase client
 
 const FacilityAssets = () => {
   const [activeTab, setActiveTab] = useState("current");
-  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [currentAssets, setCurrentAssets] = useState([]);
+  const [disposedAssets, setDisposedAssets] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
 
-  const currentAssets = [
-    {
-      id: "A001",
-      name: "Philips LED",
-      category: "Lights",
-      installationDate: "11 Jun 2022",
-      lastMaintenance: "11 Jun 2023",
-    },
-    {
-      id: "A002",
-      name: "Philips LED",
-      category: "Lights",
-      installationDate: "11 Jun 2022",
-      lastMaintenance: "11 Jun 2023",
-    },
-    {
-      id: "A003",
-      name: "Philips LED",
-      category: "Lights",
-      installationDate: "11 Jun 2022",
-      lastMaintenance: "11 Jun 2023",
-    },
-  ];
+  // Fetch assets from the Supabase database
+  useEffect(() => {
+    const fetchAssets = async () => {
+      try {
+        // Fetch current assets
+        const { data: currentData, error: currentError } = await supabase
+          .from("facility_asset")
+          .select("*")
+          .eq("assetStatus", "Installed"); // Filter for current assets
 
-  const disposedAssets = [
-    {
-      id: "D001",
-      name: "Old Fan",
-      category: "HVAC",
-      disposalDate: "01 Jan 2023",
-    },
-    {
-      id: "D002",
-      name: "Broken AC",
-      category: "HVAC",
-      disposalDate: "15 Mar 2023",
-    },
-  ];
+        if (currentError) {
+          console.error("Error fetching current assets:", currentError.message);
+        } else {
+          setCurrentAssets(currentData || []);
+        }
+
+        // Fetch disposed assets
+        const { data: disposedData, error: disposedError } = await supabase
+          .from("facility_asset")
+          .select("*")
+          .eq("assetStatus", "Disposed"); // Filter for disposed assets
+
+        if (disposedError) {
+          console.error(
+            "Error fetching disposed assets:",
+            disposedError.message
+          );
+        } else {
+          setDisposedAssets(disposedData || []);
+        }
+      } catch (error) {
+        console.error("Unexpected error fetching assets:", error);
+      }
+    };
+
+    fetchAssets();
+  }, []);
+
+  // Filter assets based on the search query
+  const filteredCurrentAssets = currentAssets.filter((asset) =>
+    asset.assetName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredDisposedAssets = disposedAssets.filter((asset) =>
+    asset.assetName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="facility-assets-page">
@@ -75,6 +86,8 @@ const FacilityAssets = () => {
             className="search-bar"
             type="text"
             placeholder="Search for Facility Asset"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
           <button className="search">Search</button>
         </div>
@@ -88,27 +101,33 @@ const FacilityAssets = () => {
 
       <div className="asset-grid">
         {activeTab === "current" &&
-          currentAssets.map((asset) => (
+          filteredCurrentAssets.map((asset) => (
             <div className="asset-card" key={asset.id}>
               <h3>{asset.id}</h3>
-              <p>Name: {asset.name}</p>
-              <p>Category: {asset.category}</p>
-              <p>Installation Date: {asset.installationDate}</p>
-              <p>Last Maintenance Date: {asset.lastMaintenance}</p>
-              <button className="view-details" onClick={() =>navigate(`/asset-details/${asset.id}`)}>
+              <p>Name: {asset.assetName}</p>
+              <p>Category: {asset.assetType}</p>
+              <p>Installation Date: {asset.assetInstallationDate}</p>
+              <p>Last Maintenance Date: {asset.lastMaintenance || "N/A"}</p>
+              <button
+                className="view-details"
+                onClick={() => navigate(`/asset-details/${asset.id}`)}
+              >
                 View Details
               </button>
             </div>
           ))}
 
         {activeTab === "disposed" &&
-          disposedAssets.map((asset) => (
+          filteredDisposedAssets.map((asset) => (
             <div className="asset-card" key={asset.id}>
               <h3>{asset.id}</h3>
-              <p>Name: {asset.name}</p>
-              <p>Category: {asset.category}</p>
-              <p>Disposal Date: {asset.disposalDate}</p>
-              <button className="view-details" onClick={() => navigate(`/asset-details/${asset.id}`)}>
+              <p>Name: {asset.assetName}</p>
+              <p>Category: {asset.assetType}</p>
+              <p>Disposal Date: {asset.disposalDate || "N/A"}</p>
+              <button
+                className="view-details"
+                onClick={() => navigate(`/asset-details/${asset.id}`)}
+              >
                 View Details
               </button>
             </div>

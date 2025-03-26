@@ -3,8 +3,11 @@
   }
 
 .tickets-page .content {
-  padding-top: 20px;  /* Adjust as needed */
-}
+  flex: 1;
+  padding-top: 60px; /* Adjust to match the top bar height */
+  padding-left: 30px;
+  padding-right: 30px;
+} 
 
 .search-bar {
 display: flex;

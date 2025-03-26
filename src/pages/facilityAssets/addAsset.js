@@ -4,6 +4,8 @@ import { QRCodeSVG } from "qrcode.react";
 import "./addAsset.css";
 import "../index.css";
 import PageHeader from "../pageHeader";
+import supabase from "../../backend/DBClient/SupaBaseClient";
+import Cookies from "js-cookie";
 
 const categories = [
   "Lights",
@@ -23,29 +25,46 @@ const AddAsset = () => {
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
   };
-  
+
   const handleNext = () => {
     if (selectedCategory) {
-        setCurrentPage(2);
+      setCurrentPage(2);
     }
-    
   };
 
   const handleSubmit = async () => {
     try {
-      const response = await fetch("/api/assets/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      // Add the selected category to the form data
+      const assetData = { ...formData, assetType: selectedCategory };
+      const user = JSON.parse(Cookies.get("userData"));
+      console.log(assetData);
+      // Insert the asset data into the Supabase database
+      const { data, error } = await supabase
+        .from("facility_asset") // Replace "assets" with your actual table name
+        .insert({
+          adminId: user.userId,
+          //TODO add worker id
+          assetType: assetData.assetType,
+          assetName: assetData.assetName,
+          assetPurchaseDate: assetData.assetPurchaseDate,
+          assetPurchasePrice: assetData.assetPurchasePrice,
+          assetLifeSpan: assetData.assetLifeSpan,
+          assetInstallationDate: assetData.assetInstallationDate,
+          warrantyDate: assetData.warrantyDate,
+          assetStatus: assetData.assetStatus,
+          isGreenTech: assetData.isGreenTech === "Yes" ? true : false,
+        });
+      if (error) {
+        throw new Error(error.message);
+      }
 
-      if (!response.ok) throw new Error("Failed to add asset.");
-
-      const assetData = await response.json();
-      setQrCodeData(assetData); // Store asset data for QR code generation
+      // If successful, set the QR code data and reset the form
+      setQrCodeData(data[0]); // Assuming the first inserted row is returned
+      setFormData({});
+      alert("Asset added successfully!");
     } catch (error) {
       console.error("Error adding asset:", error);
-      alert("Error adding asset.");
+      alert("Error adding asset: " + error.message);
     }
   };
 
@@ -57,14 +76,16 @@ const AddAsset = () => {
       {currentPage === 1 && (
         <>
           <header className="add-asset-header">
-          <PageHeader title="Add New Asset" />
+            <PageHeader title="Add New Asset" />
           </header>
           <h3>Select Asset Category</h3>
           <div className="category-grid">
             {categories.map((category) => (
               <div
                 key={category}
-                className={`category-card ${selectedCategory === category ? "selected" : ""}`}
+                className={`category-card ${
+                  selectedCategory === category ? "selected" : ""
+                }`}
                 onClick={() => handleCategoryClick(category)}
               >
                 {category}
@@ -72,15 +93,18 @@ const AddAsset = () => {
             ))}
 
             <div className="button-group">
-            <button className="back-button" onClick={() => navigate(-1)} >
+              <button className="back-button" onClick={() => navigate(-1)}>
                 Back
-                </button>
-            <button className="next-button" onClick={handleNext} disabled={!selectedCategory}>
+              </button>
+              <button
+                className="next-button"
+                onClick={handleNext}
+                disabled={!selectedCategory}
+              >
                 Next
-            </button>
-            </div>  
+              </button>
+            </div>
           </div>
-          
         </>
       )}
 
@@ -109,7 +133,7 @@ const AddAsset = () => {
           category={selectedCategory}
           formData={formData}
           setFormData={setFormData}
-          onSubmit={() => console.log("Final Submission", formData)}
+          onSubmit={handleSubmit} // Pass the handleSubmit function here
           prevPage={() => setCurrentPage(3)} // Pass prevPage
         />
       )}
@@ -119,17 +143,18 @@ const AddAsset = () => {
 
 const AssetForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
   const [data, setData] = useState({
-    name: "",
-    purchaseDate: "",
-    price: "",
-    lifespan: "",
+    assetName: "",
+    assetPurchaseDate: "",
+    assetPurchasePrice: "",
+    assetLifeSpan: 0,
     warrantyDate: "",
-    quantity: "",
-    status: "Installed",
-    installDate: "",
+    quantity: 0,
+    assetStatus: "Installed",
+    assetInstallationDate: "",
   });
 
   const handleChange = (e) => {
+    console.log(e.target.value);
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
@@ -138,58 +163,112 @@ const AssetForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
     nextPage();
   };
 
-  
   return (
-
     <div className="asset-form">
       <h1>Add New Asset ({category})</h1>
       <p>Basic Information</p>
       <form>
         <div className="form-group">
           <label>Name</label>
-          <input type="text" name="name" value={data.name} onChange={handleChange} required />
+          <input
+            type="text"
+            name="assetName"
+            value={data.name}
+            onChange={handleChange}
+            required
+          />
         </div>
 
         <div className="form-group">
           <label>Purchase Date</label>
-          <input type="date" name="purchaseDate" value={data.purchaseDate} onChange={handleChange} required />
+          <input
+            type="date"
+            name="assetPurchaseDate"
+            value={data.purchaseDate}
+            onChange={handleChange}
+            required
+          />
         </div>
 
         <div className="form-group">
           <label>Purchase Price</label>
-          <input type="number" name="price" value={data.price} onChange={handleChange} required />
+          <input
+            type="number"
+            name="assetPurchasePrice"
+            value={data.price}
+            onChange={handleChange}
+            required
+          />
         </div>
 
         <div className="form-group">
           <label>Life Span (years)</label>
-          <input type="number" name="lifespan" value={data.lifespan} onChange={handleChange} required />
+          <input
+            type="number"
+            name="assetLifeSpan"
+            value={data.assetLifeSpan}
+            onChange={handleChange}
+            required
+          />
         </div>
 
         <div className="form-group">
           <label>Warranty Date</label>
-          <input type="date" name="warrantyDate" value={data.warrantyDate} onChange={handleChange} required />
+          <input
+            type="date"
+            name="warrantyDate"
+            value={data.warrantyDate}
+            onChange={handleChange}
+            required
+          />
         </div>
 
         <div className="form-group">
           <label>Quantity (units)</label>
-          <input type="number" name="quantity" value={data.quantity} onChange={handleChange} required />
+          <input
+            type="number"
+            name="quantity"
+            value={data.quantity}
+            onChange={handleChange}
+            required
+          />
         </div>
 
         <div className="form-group">
           <label>Status</label>
           <div>
             <label>
-              <input type="radio" name="status" value="New" checked={data.status === "New"} onChange={handleChange} /> New
+              <input
+                type="radio"
+                name="assetStatus"
+                value="New"
+                checked={data.assetStatus === "New"}
+                onChange={handleChange}
+              />{" "}
+              New
             </label>
             <label>
-              <input type="radio" name="status" value="Installed" checked={data.status === "Installed"} onChange={handleChange} /> Installed
+              <input
+                type="radio"
+                name="assetStatus"
+                value="Installed"
+                checked={data.assetStatus === "Installed"}
+                onChange={handleChange}
+              />{" "}
+              Installed
             </label>
           </div>
         </div>
 
         <div className="form-group">
           <label>Installation Date</label>
-          <input type="date" name="installDate" value={data.installDate} onChange={handleChange} required />
+          <input
+            type="date"
+            name="assetInstallationDate"
+            value={data.installDate}
+            onChange={handleChange}
+            required
+          />
         </div>
         <div className="button-group">
           <button type="button" className="back-button" onClick={prevPage}>
@@ -204,7 +283,13 @@ const AssetForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
   );
 };
 
-const GreenTechForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
+const GreenTechForm = ({
+  category,
+  setFormData,
+  formData,
+  nextPage,
+  prevPage,
+}) => {
   const [data, setData] = useState({
     greenTech: "",
     sirimEco: "",
@@ -221,26 +306,65 @@ const GreenTechForm = ({ category, setFormData, formData, nextPage, prevPage }) 
     nextPage();
   };
 
-  
-
   return (
     <div className="asset-form">
       <h1>Green Tech-Related Information ({category})</h1>
       <label>Is it using Green Technology?</label>
-      <input type="radio" name="greenTech" value="Yes" onChange={handleChange} /> Yes
-      <input type="radio" name="greenTech" value="No" onChange={handleChange} /> No
-
+      <input
+        type="radio"
+        name="isGreenTech"
+        value="Yes"
+        onChange={handleChange}
+      />{" "}
+      Yes
+      <input
+        type="radio"
+        name="isGreenTech"
+        value="No"
+        onChange={handleChange}
+      />{" "}
+      No
       <label>Certified by SIRIM Eco Labelling Scheme?</label>
-      <input type="radio" name="sirimEco" value="Yes" onChange={handleChange} /> Yes
-      <input type="radio" name="sirimEco" value="No" onChange={handleChange} /> No
-
-      <label>Certified by SIRIM Product Carbon Footprint Certification Scheme?</label>
-      <input type="radio" name="sirimCarbon" value="Yes" onChange={handleChange} /> Yes
-      <input type="radio" name="sirimCarbon" value="No" onChange={handleChange} /> No
-
+      <input
+        type="radio"
+        name="sirimEco"
+        value="Yes"
+        onChange={handleChange}
+      />{" "}
+      Yes
+      <input
+        type="radio"
+        name="sirimEco"
+        value="No"
+        onChange={handleChange}
+      />{" "}
+      No
+      <label>
+        Certified by SIRIM Product Carbon Footprint Certification Scheme?
+      </label>
+      <input
+        type="radio"
+        name="sirimCarbon"
+        value="Yes"
+        onChange={handleChange}
+      />{" "}
+      Yes
+      <input
+        type="radio"
+        name="sirimCarbon"
+        value="No"
+        onChange={handleChange}
+      />{" "}
+      No
       <label>Energy Efficiency Rating (stars)</label>
-      <input type="number" name="efficiency" placeholder="if applicable" value={data.efficiency} onChange={handleChange} required />
-      
+      <input
+        type="number"
+        name="efficiency"
+        placeholder="if applicable"
+        value={data.efficiency}
+        onChange={handleChange}
+        required
+      />
       <div className="button-group">
         <button type="button" className="back-button" onClick={prevPage}>
           Back
@@ -253,7 +377,13 @@ const GreenTechForm = ({ category, setFormData, formData, nextPage, prevPage }) 
   );
 };
 
-const CategorySpecificForm = ({ category, setFormData, formData, onSubmit, prevPage }) => {
+const CategorySpecificForm = ({
+  category,
+  setFormData,
+  formData,
+  onSubmit,
+  prevPage,
+}) => {
   const [data, setData] = useState({});
 
   const handleChange = (e) => {
@@ -262,7 +392,7 @@ const CategorySpecificForm = ({ category, setFormData, formData, onSubmit, prevP
 
   const handleSubmit = () => {
     setFormData({ ...formData, categoryData: data });
-    onSubmit();
+    onSubmit(); // Call the parent `handleSubmit` function
   };
 
   return (
@@ -274,17 +404,32 @@ const CategorySpecificForm = ({ category, setFormData, formData, onSubmit, prevP
         <>
           <div className="form-group">
             <label>Light Type</label>
-            <input type="text" name="lightType" onChange={handleChange} required />
+            <input
+              type="text"
+              name="lightType"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Serial Number</label>
-            <input type="text" name="serialNumber" onChange={handleChange} required />
+            <input
+              type="text"
+              name="serialNumber"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Voltage</label>
-            <input type="text" name="voltage" onChange={handleChange} required />
+            <input
+              type="text"
+              name="voltage"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
@@ -294,7 +439,12 @@ const CategorySpecificForm = ({ category, setFormData, formData, onSubmit, prevP
 
           <div className="form-group">
             <label>Estimated Energy Consumption (in kWh/year)</label>
-            <input type="text" name="energyConsumption" onChange={handleChange} required />
+            <input
+              type="text"
+              name="estimatedEnergyConsumption"
+              onChange={handleChange}
+              required
+            />
           </div>
         </>
       )}
@@ -304,62 +454,112 @@ const CategorySpecificForm = ({ category, setFormData, formData, onSubmit, prevP
         <>
           <div className="form-group">
             <label>Weight Capacity (kg)</label>
-            <input type="text" name="weightCapacity" onChange={handleChange} required />
+            <input
+              type="text"
+              name="weightCapacity"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Dimension</label>
-            <input type="text" name="dimension" onChange={handleChange} required />
+            <input
+              type="text"
+              name="dimension"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Power Mechanism</label>
-            <input type="text" name="powerMechanism" onChange={handleChange} required />
+            <input
+              type="text"
+              name="powerMechanism"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Speed of Travel</label>
-            <input type="text" name="speedOfTravel" onChange={handleChange} required />
+            <input
+              type="text"
+              name="speedOfTravel"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Estimated Energy Consumption (in kWh/year)</label>
-            <input type="text" name="energyConsumption" onChange={handleChange} required />
+            <input
+              type="text"
+              name="estimatedEnergyConsumption"
+              onChange={handleChange}
+              required
+            />
           </div>
         </>
       )}
 
-    {/* Fields for CCTV */}
-    {category === "CCTV" && (
+      {/* Fields for CCTV */}
+      {category === "CCTV" && (
         <>
           <div className="form-group">
             <label>Resolution</label>
-            <input type="text" name="resolution" onChange={handleChange} required />
+            <input
+              type="text"
+              name="resolution"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Field of View</label>
-            <input type="text" name="fieldOfView" onChange={handleChange} required />
+            <input
+              type="text"
+              name="fieldOfView"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Recording Capacity</label>
-            <input type="text" name="recordingCapacity" onChange={handleChange} required />
+            <input
+              type="text"
+              name="recordingCapacity"
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="form-group">
             <label>Frame Rate</label>
-            <input type="text" name="frameRate" onChange={handleChange} required />
+            <input
+              type="text"
+              name="frameRate"
+              onChange={handleChange}
+              required
+            />
           </div>
         </>
       )}
 
       {/* Fields for Gym Equipment */}
-        {category === "Gym Equipment" && (
+      {category === "Gym Equipment" && (
         <>
           <div className="form-group">
             <label>Equipment Type</label>
-            <input type="text" name="equipmentType" onChange={handleChange} required />
+            <input
+              type="text"
+              name="equipmentType"
+              onChange={handleChange}
+              required
+            />
           </div>
         </>
       )}
@@ -369,16 +569,25 @@ const CategorySpecificForm = ({ category, setFormData, formData, onSubmit, prevP
         <>
           <div className="form-group">
             <label>Asset Description</label>
-            <input type="text" name="assetDescription" onChange={handleChange} required />
+            <input
+              type="text"
+              name="assetDescription"
+              onChange={handleChange}
+              required
+            />
           </div>
         </>
       )}
-      
+
       <div className="button-group">
         <button type="button" className="back-button" onClick={prevPage}>
           Back
         </button>
-        <button type="submit" className="submit-button">
+        <button
+          type="button"
+          className="submit-button"
+          onClick={handleSubmit} // Attach the handleSubmit function here
+        >
           Add New {category}
         </button>
       </div>

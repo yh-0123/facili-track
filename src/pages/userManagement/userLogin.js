@@ -53,8 +53,9 @@ const UserLogin = ({ setIsLoggedIn }) => {
       // Successful login
       console.log("User logged in:", data);
 
+      var userData = { userId: data.userId, userName: data.userName };
       // Store user session in cookies
-      Cookies.set("user", JSON.stringify(data.userName), { expires: 7 }); // Store session for 7 days
+      Cookies.set("userData", JSON.stringify(userData), { expires: 7 }); // Store session for 7 days
 
       // Set isLoggedIn to true
       setIsLoggedIn(true);

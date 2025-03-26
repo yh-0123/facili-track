@@ -70,13 +70,14 @@ body {
 
 .content {
   flex: 1;
-  padding-top: 60px; /* Adjust to match the top bar height */
-  padding-left: 20px;
-  padding-right: 20px;
+  padding: 0;
 }
 
 .dashboard-page .content {
-  padding-top: 20px;  /* Adjust as needed */
+  flex: 1;
+  padding-top: 60px; /* Adjust to match the top bar height */
+  padding-left: 30px;
+  padding-right: 30px;
 }
 
 .pagination {
