@@ -191,7 +191,7 @@ const AssetForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
         </div>
 
         <div className="form-group">
-          <label>Purchase Price</label>
+          <label>Purchase Price (RM)</label>
           <input
             type="number"
             name="assetPurchasePrice"

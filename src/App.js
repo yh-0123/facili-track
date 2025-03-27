@@ -16,7 +16,9 @@ import ProfileDropdown from "./pages/userManagement/profileDropdown";
 import AddAsset from "./pages/facilityAssets/addAsset";
 import AssetDetails from "./pages/facilityAssets/assetDetails";
 import TicketDetails from "./pages/tickets/ticketDetails";
-import ResidentHome from "./pages/residentHome"; // Import Resident Home
+import ResidentHome from "./pages/residentHome"; 
+import CreateTicket from "./pages/tickets/createTicket";
+import TicketHistory from "./pages/tickets/ticketHistory";
 import "./pages/index.css";
 
 function App() {
@@ -96,11 +98,20 @@ function App() {
               path="/view-profile"
               element={isLoggedIn ? <ViewProfile /> : <Navigate to="/" />}
             />
-            <Route path="/add-asset" element={<AddAsset />} />
-            <Route path="/asset-details/:id" element={<AssetDetails />} />
-            <Route path="/ticket/:id" element={<TicketDetails />} />
-            <Route path="/resident-home" element={<ResidentHome />} />
-            <Route path="/login" element={<UserLogin />} />
+            <Route path="/add-asset" element={<AddAsset />} 
+            />
+            <Route path="/asset-details/:id" element={<AssetDetails />}
+            />
+            <Route path="/ticket/:id" element={<TicketDetails />} 
+            />
+            <Route path="/resident-home" element={<ResidentHome />} 
+            />
+            <Route path="/login" element={<UserLogin />} 
+            />
+            <Route path="/create-ticket" element={<CreateTicket />} 
+            />
+            <Route path="/ticket-history" element={<TicketHistory />} 
+            />
           </Routes>
         </div>
       </div>

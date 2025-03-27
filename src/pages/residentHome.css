@@ -1,0 +1,136 @@
+/* ResidentHome.css */
+
+/* Hides sidebar and topbar when ResidentHome is active */
+.hide-layout .sidebar,
+.hide-layout .topbar {
+  display: none !important;
+}
+
+
+/* Main container */
+.resident-home {
+    min-height: 100vh;
+    background-color: #065f63;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    position: relative;
+  }
+  
+  /* Profile Dropdown */
+  .user-dropdown {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+  
+  .dropdown-button {
+    display: flex;
+    align-items: center;
+    background: white;
+    color: black;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+  
+  .icon {
+    margin-right: 0.5rem;
+  }
+  
+  .arrow {
+    margin-left: 0.5rem;
+  }
+  
+  /* Dropdown Menu */
+  .dropdown-menu {
+    position: absolute;
+    right: 0;
+    margin-top: 0.5rem;
+    width: 120px;
+    background: white;
+    color: black;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 0.5rem;
+  }
+  
+  .dropdown-item {
+    width: 100%;
+    text-align: left;
+    padding: 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  
+  .dropdown-item:hover {
+    background: #f0f0f0;
+  }
+  
+  /* Title */
+  .app-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: white;
+  }
+  
+  /* Buttons */
+  .button-container {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    max-width: 250px;
+    margin-bottom: 32px;
+  }
+  
+  .action-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: white;
+    color: #065f63;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+  
+  .action-button:hover {
+    background: #f1f1f1;
+  }
+  
+  /* Icons inside buttons */
+  .button-icon {
+    font-size: 1.5rem;
+    background: #065f63;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 50%;
+  }
+  
+  /* Responsive Design for iPhone 13 */
+@media screen and (max-width: 430px) {
+    .resident-home {
+      padding: 2rem;
+    }
+  
+    .title {
+      font-size: 2rem;
+    }
+  
+    .resident-button {
+      font-size: 14px;
+      padding: 12px;
+    }
+  }

@@ -1,0 +1,122 @@
+Container Styling
+.create-ticket {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+    background-color: #f4f8fb;
+    min-height: 100vh;
+  }
+  
+  /* Back Button */
+  .back1-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    cursor: pointer;
+  }
+  
+  /* Title */
+  .title {
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  /* Form Styling */
+  .ticket-form {
+    width: 100%;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .ticket-form label {
+    font-size: 14px;
+    font-weight: bold;
+    display: block;
+    margin: 10px 0 5px;
+  }
+  
+  .ticket-form input,
+  .ticket-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box; /* Prevents overflow */
+    resize: none;
+  }
+  
+  .ticket-form textarea {
+    resize: none;
+    height: 80px;
+  }
+  
+  /* File Upload Styling */
+  .file-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+  }
+  
+  .file-upload input {
+    display: none;
+  }
+  
+  .file-upload label {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  
+  /* Submit Button */
+  .submit1-button {
+    padding: 12px;
+    background-color: #e49b79;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    display: block;  /* Makes it a block element */
+    margin: 15px auto; /* Centers horizontally */
+    margin-bottom: 0px;
+    width: 80%;  /* Adjust width for better appearance */
+  }
+  
+  .submit1-button:hover {
+    background-color: #d48568;
+  }
+  
+  /* Responsive Design for iPhone 13 */
+  @media screen and (max-width: 390px) {
+    .create-ticket {
+      padding: 15px;
+    }
+  
+    .ticket-form {
+      padding: 15px;
+    }
+  
+    .submit1-button {
+      padding: 10px;
+      font-size: 14px;
+    }
+  }
+  
