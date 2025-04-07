@@ -93,6 +93,18 @@ function App() {
                     </li>
                   </>
                 )}
+
+                {userRole === userRolesEnum.RESIDENT && (
+                  <>
+                    <li>
+                      <Link to="/create-ticket">Create New Ticket</Link>
+                    </li>
+                    <li>
+                      <Link to="/tickets">Ticket History</Link>
+                    </li>
+                    
+                  </>
+                )}  
               </ul>
             </nav>
 

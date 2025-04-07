@@ -1,27 +1,49 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import supabase from "../../backend/DBClient/SupaBaseClient"; // Import your Supabase client
+import { useParams } from "react-router-dom";
+import supabase from "../../backend/DBClient/SupaBaseClient";
 import "./assetDetails.css";
-import QRCodeModal from "./qrCodeModal"; // Import the QRCodeModal component
+import QRCodeModal from "./qrCodeModal";
 import PageHeader from "../pageHeader";
+import Cookies from "js-cookie"; // Import Cookies
+import userRolesEnum from "../userManagement/userRolesEnum"; // Import user roles enum
 
 const AssetDetails = () => {
-  const { id } = useParams(); // Get asset ID from URL
+  const { id } = useParams();
   const [asset, setAsset] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedAsset, setEditedAsset] = useState({});
-  const [showQRCodeModal, setShowQRCodeModal] = useState(false); // State to show the QR modal
-  const navigate = useNavigate();
+  const [showQRCodeModal, setShowQRCodeModal] = useState(false);
+  
+  // Add state for user authentication and role
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
+    // Check user authentication status from cookies
+    const userData = Cookies.get("userData");
+    if (userData) {
+      try {
+        const userInfo = JSON.parse(userData);
+        setIsLoggedIn(true);
+        setUserRole(userInfo.userRole);
+      } catch (parseError) {
+        console.error("Error parsing userData:", parseError);
+        setIsLoggedIn(false);
+        setUserRole(null);
+      }
+    } else {
+      setIsLoggedIn(false);
+      setUserRole(null);
+    }
+
     const fetchAssetDetails = async () => {
       try {
         const { data, error } = await supabase
           .from("facility_asset")
           .select("*")
           .eq("assetId", id)
-          .single(); // Fetch single asset based on ID
+          .single();
 
         if (error) {
           console.error("Error fetching asset details:", error.message);
@@ -68,7 +90,12 @@ const AssetDetails = () => {
   };
 
   const handleGenerateQRCode = () => {
-    setShowQRCodeModal(true); // Show the QR code modal
+    setShowQRCodeModal(true);
+  };
+
+  // Function to check if action buttons should be shown
+  const shouldShowActionButtons = () => {
+    return isLoggedIn && userRole !== userRolesEnum.RESIDENT;
   };
 
   if (loading) return <p>Loading asset details...</p>;
@@ -76,7 +103,7 @@ const AssetDetails = () => {
 
   return (
     <div className="asset-details-page">
-       <div className="content">
+      <div className="content">
         <PageHeader title="Asset Details" />
       
         <div className="asset-details">
@@ -148,35 +175,43 @@ const AssetDetails = () => {
                 <p><strong>Asset Description:</strong> {isEditing ? <input type="text" name="assetDescription" value={editedAsset.assetDescription} onChange={handleInputChange} /> :asset.categoryData?.assetDescription}</p>
               </>
             )}
-
           </div>
-
-          
         </div>
-        {/* Action Buttons */}
-        <div className="button-group">
+        
+        {/* Only show action buttons if user is logged in and not a resident */}
+        {shouldShowActionButtons() && (
+          <div className="button-group">
             {isEditing ? (
-            <>
-              <button className="cancel-btn" onClick={handleCancelEdit}>Cancel</button>
-              <button className="save-btn" onClick={handleSave}>Save</button>
-            </>
-          ) : (
-            <button className="back-btn" onClick={() => window.history.back()}>Back</button>
-          )}
-          {isEditing ? null : <button className="edit-btn" onClick={() => setIsEditing(true)}>Edit Details</button>}
-          <button className="qr-btn" onClick={handleGenerateQRCode}>Generate QR Code</button>
+              <>
+                <button className="cancel-btn" onClick={handleCancelEdit}>Cancel</button>
+                <button className="save-btn" onClick={handleSave}>Save</button>
+              </>
+            ) : (
+              <>
+                <button className="back-btn" onClick={() => window.history.back()}>Back</button>
+                <button className="edit-btn" onClick={() => setIsEditing(true)}>Edit Details</button>
+                <button className="qr-btn" onClick={handleGenerateQRCode}>Generate QR Code</button>
+              </>
+            )}
           </div>
+        )}
+        
+        {/* Always show back button for residents or non-logged in users */}
+        {!shouldShowActionButtons() && (
+          <div className="button-group">
+            <button className="back-btn" onClick={() => window.history.back()}>Back</button>
+          </div>
+        )}
       </div>
 
-     {/* QR Code Modal */}
-     {showQRCodeModal && (
+      {/* QR Code Modal */}
+      {showQRCodeModal && (
         <QRCodeModal 
           assetUrl={`/asset-details/${asset.assetId}`} 
           onClose={() => setShowQRCodeModal(false)} 
         />
       )}
-
-  </div>
+    </div>
   );
 };
 

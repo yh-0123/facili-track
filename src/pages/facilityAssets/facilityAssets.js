@@ -1,92 +1,132 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaChevronDown } from "react-icons/fa";
 import "./facilityAssets.css";
 import "../index.css";
 import PageHeader from "../pageHeader";
-import supabase from "../../backend/DBClient/SupaBaseClient"; // Import your Supabase client
+import supabase from "../../backend/DBClient/SupaBaseClient";
 
 const FacilityAssets = () => {
-  const [activeTab, setActiveTab] = useState("current");
-  const [currentAssets, setCurrentAssets] = useState([]);
-  const [disposedAssets, setDisposedAssets] = useState([]);
+  const [assets, setAssets] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
-  const [currentAssetStatusFilter, setCurrentAssetStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [categories, setCategories] = useState([]);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
-  // Fetch assets from the Supabase database
+  // Fetch all assets from the Supabase database
   useEffect(() => {
     const fetchAssets = async () => {
+      setIsLoading(true);
+      setError(null);
+      
       try {
-        // Fetch current assets
-        const { data: currentData, error: currentError } = await supabase
+        // Fetch all assets regardless of status
+        const { data, error } = await supabase
           .from("facility_asset")
-          .select("*")
-          .in("assetStatus", ["New", "Installed"]); // Filter for current assets
+          .select("*");
 
-        if (currentError) {
-          console.error("Error fetching current assets:", currentError.message);
+        if (error) {
+          console.error("Error fetching assets:", error.message);
+          setError("Failed to load assets");
         } else {
-          setCurrentAssets(currentData || []);
-        }
-
-        // Fetch disposed assets
-        const { data: disposedData, error: disposedError } = await supabase
-          .from("facility_asset")
-          .select("*")
-          .eq("assetStatus", "Disposed"); // Filter for disposed assets
-
-        if (disposedError) {
-          console.error(
-            "Error fetching disposed assets:",
-            disposedError.message
-          );
-        } else {
-          setDisposedAssets(disposedData || []);
+          setAssets(data || []);
+          
+          // Extract unique categories from all assets
+          const uniqueCategories = [...new Set(data.map(asset => asset.assetType))];
+          setCategories(uniqueCategories);
         }
       } catch (error) {
         console.error("Unexpected error fetching assets:", error);
+        setError("An unexpected error occurred");
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchAssets();
+    
+    // Close dropdowns when clicking outside
+    const handleClickOutside = (event) => {
+      const statusDropdown = document.getElementById("status-dropdown");
+      const categoryDropdown = document.getElementById("category-dropdown");
+      
+      if (statusDropdown && !statusDropdown.contains(event.target)) {
+        setStatusDropdownOpen(false);
+      }
+      
+      if (categoryDropdown && !categoryDropdown.contains(event.target)) {
+        setCategoryDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
-  // Filter assets based on the search query
-  const filteredCurrentAssets = currentAssets
-  .filter((asset) =>
-    asset.assetName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-  .filter((asset) =>
-    currentAssetStatusFilter === "All"
-      ? true
-      : asset.assetStatus === currentAssetStatusFilter
-  );
+  // Filter assets based on search query, status, and category
+  const filteredAssets = assets
+    .filter((asset) =>
+      asset.assetId.toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
+      asset.assetName.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter((asset) =>
+      statusFilter === "All"
+        ? true
+        : asset.assetStatus === statusFilter
+    )
+    .filter((asset) =>
+      categoryFilter === "All"
+        ? true
+        : asset.assetType === categoryFilter
+    );
 
-  const filteredDisposedAssets = disposedAssets.filter((asset) =>
-    asset.assetName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Format date for consistent display
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
 
-  //TODO: change to search based on assetId
+  // Reset filters
+  const resetFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("All");
+    setCategoryFilter("All");
+    setStatusDropdownOpen(false);
+    setCategoryDropdownOpen(false);
+  };
+
+  // Toggle dropdown visibility
+  const toggleStatusDropdown = () => {
+    setStatusDropdownOpen(!statusDropdownOpen);
+    setCategoryDropdownOpen(false);
+  };
+
+  const toggleCategoryDropdown = () => {
+    setCategoryDropdownOpen(!categoryDropdownOpen);
+    setStatusDropdownOpen(false);
+  };
+
+  // Handle filter selection
+  const handleStatusSelect = (status) => {
+    setStatusFilter(status);
+    setStatusDropdownOpen(false);
+  };
+
+  const handleCategorySelect = (category) => {
+    setCategoryFilter(category);
+    setCategoryDropdownOpen(false);
+  };
 
   return (
     <div className="facility-assets-page">
       <PageHeader title="Facility Assets List" />
-
-      <div className="tabs">
-        <span
-          className={activeTab === "current" ? "active-tab" : ""}
-          onClick={() => setActiveTab("current")}
-        >
-          Current Asset
-        </span>
-        <span
-          className={activeTab === "disposed" ? "active-tab" : ""}
-          onClick={() => setActiveTab("disposed")}
-        >
-          Disposed Asset
-        </span>
-      </div>
 
       <div className="search-container">
         <div className="search-bar-container">
@@ -94,7 +134,7 @@ const FacilityAssets = () => {
           <input
             className="search-bar"
             type="text"
-            placeholder="Search for Facility Asset"
+            placeholder="Search by Asset ID or Name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -107,66 +147,117 @@ const FacilityAssets = () => {
         </button>
       </div>
 
-      {activeTab === "current" && (
-        <div className="status-filter">
-          <button
-            className={currentAssetStatusFilter === "All" ? "active-filter" : ""}
-            onClick={() => setCurrentAssetStatusFilter("All")}
+      <div className="filters-row">
+        {/* Category Filter Dropdown */}
+        <div className="filter-dropdown" id="category-dropdown">
+          <button 
+            className="dropdown-toggle" 
+            onClick={toggleCategoryDropdown}
           >
-            All
+            Category: {categoryFilter}
+            <FaChevronDown className={`dropdown-icon ${categoryDropdownOpen ? 'rotated' : ''}`} />
           </button>
-          <button
-            className={currentAssetStatusFilter === "New" ? "active-filter" : ""}
-            onClick={() => setCurrentAssetStatusFilter("New")}
-          >
-            New
-          </button>
-          <button
-            className={currentAssetStatusFilter === "Installed" ? "active-filter" : ""}
-            onClick={() => setCurrentAssetStatusFilter("Installed")}
-          >
-            Installed
-          </button>
+          {categoryDropdownOpen && (
+            <div className="dropdown-menu">
+              <div 
+                className={`dropdown-item ${categoryFilter === "All" ? "active" : ""}`}
+                onClick={() => handleCategorySelect("All")}
+              >
+                All Categories
+              </div>
+              {categories.map((category) => (
+                <div
+                  key={category}
+                  className={`dropdown-item ${categoryFilter === category ? "active" : ""}`}
+                  onClick={() => handleCategorySelect(category)}
+                >
+                  {category}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+        
+        {/* Status Filter Dropdown */}
+        <div className="filter-dropdown" id="status-dropdown">
+          <button 
+            className="dropdown-toggle" 
+            onClick={toggleStatusDropdown}
+          >
+            Status: {statusFilter}
+            <FaChevronDown className={`dropdown-icon ${statusDropdownOpen ? 'rotated' : ''}`} />
+          </button>
+          {statusDropdownOpen && (
+            <div className="dropdown-menu">
+              <div 
+                className={`dropdown-item ${statusFilter === "All" ? "active" : ""}`}
+                onClick={() => handleStatusSelect("All")}
+              >
+                All Status
+              </div>
+              <div 
+                className={`dropdown-item ${statusFilter === "New" ? "active" : ""}`}
+                onClick={() => handleStatusSelect("New")}
+              >
+                New
+              </div>
+              <div 
+                className={`dropdown-item ${statusFilter === "Installed" ? "active" : ""}`}
+                onClick={() => handleStatusSelect("Installed")}
+              >
+                Installed
+              </div>
+              <div 
+                className={`dropdown-item ${statusFilter === "Disposed" ? "active" : ""}`}
+                onClick={() => handleStatusSelect("Disposed")}
+              >
+                Disposed
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Reset Filters Button */}
+        <button className="reset-filters-btn" onClick={resetFilters}>
+          Reset Filters
+        </button>
+      </div>
 
+      {isLoading && <div className="loading-message">Loading assets...</div>}
+      {error && <div className="error-message">{error}</div>}
+      
       <div className="asset-grid">
-      {activeTab === "current" &&
-        filteredCurrentAssets.map((asset) => (
-          <div className="asset-card" key={asset.id}>
-            <h3>{asset.id}</h3>
+        {!isLoading && filteredAssets.length === 0 && (
+          <div className="no-results">No assets found matching your search criteria</div>
+        )}
+        
+        {filteredAssets.map((asset) => (
+          <div 
+            className="asset-card" 
+            key={asset.id}
+            data-status={asset.assetStatus}
+          >
+            <h3>{asset.assetName}</h3>
             <p>Asset ID: {asset.assetId}</p>
-            <p>Name: {asset.assetName}</p>
             <p>Category: {asset.assetType}</p>
             <p>Status: {asset.assetStatus}</p>
-            <p>Last Maintenance Date: {asset.lastMaintenance || "N/A"}</p>
-
+            
+            {/* Show different date fields based on status */}
+            {asset.assetStatus === "Disposed" ? (
+              <p>Disposal Date: {formatDate(asset.assetDisposalDate)}</p>
+            ) : (
+              <p>Last Maintenance: {formatDate(asset.lastMaintenance)}</p>
+            )}
+            
             <Link
-                  to={`/asset-details/${asset.assetId}`}
-                  state={{ asset }} // Pass the ticket details as state
-                  className="view-details"
-                >
-                  View Details
-                </Link>
+              to={`/asset-details/${asset.assetId}`}
+              state={{ asset }}
+              className="view-details"
+            >
+              View Details
+            </Link>
           </div>
         ))}
-
-      {activeTab === "disposed" &&
-        filteredDisposedAssets.map((asset) => (
-          <div className="asset-card" key={asset.id}>
-            <p>Asset ID: {asset.assetId}</p>
-            <p>Name: {asset.assetName}</p>
-            <p>Category: {asset.assetType}</p>
-            <p>Disposal Date: {asset.assetDisposalDate || "N/A"}</p>
-            <Link
-                  to={`/asset-details/${asset.assetId}`}
-                  state={{ asset }} // Pass the ticket details as state
-                  className="view-details"
-                >
-                  View Details
-                </Link>
-          </div>
-          ))}
       </div>
     </div>
   );

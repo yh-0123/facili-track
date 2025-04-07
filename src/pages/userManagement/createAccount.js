@@ -5,6 +5,7 @@ import supabase from "../../backend/DBClient/SupaBaseClient";
 import PageHeader from "../pageHeader";
 import USER_ROLES from "./userRolesEnum"; // Import ENUM
 import { Eye, EyeOff } from "lucide-react"; // Import icons
+import bcrypt from "bcryptjs"; // Import bcryptjs for password hashing
 
 const CreateAccount = () => {
   const [userName, setUserName] = useState("");
@@ -46,6 +47,15 @@ const CreateAccount = () => {
     }
   };
 
+  // Function to hash password using bcrypt
+  const hashPassword = async (plainPassword) => {
+    // Generate a salt with cost factor 10 (can be adjusted for security/performance balance)
+    const salt = await bcrypt.genSalt(10);
+    // Hash the password with the generated salt
+    const hashedPassword = await bcrypt.hash(plainPassword, salt);
+    return hashedPassword;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -69,10 +79,13 @@ const CreateAccount = () => {
     setIsLoading(true); // Start loading state
 
     try {
+      // Hash the password before storing
+      const hashedPassword = await hashPassword(password);
+
       const { error } = await supabase.from("users").insert([
         {
           userName: userName,
-          userPassword: password,
+          userPassword: hashedPassword, // Store the hashed password instead of plain text
           userRole: userRole, // Use ENUM value
           userAccountStatus: 1,
           userEmail: email,

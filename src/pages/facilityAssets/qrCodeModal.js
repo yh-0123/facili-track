@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { QRCodeCanvas } from 'qrcode.react'; // Corrected import
-import './qrCodeModal.css'; // Import the CSS
+import { QRCodeCanvas } from 'qrcode.react';
+import './qrCodeModal.css';
 
 const QRCodeModal = ({ assetUrl, onClose }) => {
   const [showQRCode, setShowQRCode] = useState(false);
   const qrRef = useRef(null);
 
-  // Modify assetUrl to ensure it starts with http://localhost:3000/
+  // Ensure the asset URL starts with your local dev URL
   const modifiedAssetUrl = assetUrl.startsWith('http://localhost:3000/')
     ? assetUrl
     : `http://localhost:3000${assetUrl}`;
@@ -16,7 +16,9 @@ const QRCodeModal = ({ assetUrl, onClose }) => {
   };
 
   const handleDownload = () => {
-    const canvas = qrRef.current.querySelector('canvas');
+    const canvas = qrRef.current?.querySelector('canvas');
+    if (!canvas) return;
+
     const url = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = url;
@@ -25,22 +27,45 @@ const QRCodeModal = ({ assetUrl, onClose }) => {
   };
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    const canvas = qrRef.current.querySelector('canvas');
-    const dataUrl = canvas.toDataURL();
+    const canvas = qrRef.current?.querySelector('canvas');
+    if (!canvas) return;
 
+    const dataUrl = canvas.toDataURL('image/png');
+
+    const printWindow = window.open('', '_blank');
     printWindow.document.write(`
       <html>
-        <head><title>Print QR Code</title></head>
-        <body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;">
-          <img src="${dataUrl}" style="width:300px;height:300px;" />
+        <head>
+          <title>Print QR Code</title>
+          <style>
+            body {
+              margin: 0;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+            }
+            img {
+              width: 300px;
+              height: 300px;
+            }
+          </style>
+        </head>
+        <body>
+          <img id="qr-img" src="${dataUrl}" />
+          <script>
+            const img = document.getElementById('qr-img');
+            img.onload = function() {
+              window.print();
+              window.onafterprint = function() {
+                window.close();
+              };
+            };
+          </script>
         </body>
       </html>
     `);
     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
   };
 
   return (
@@ -50,16 +75,10 @@ const QRCodeModal = ({ assetUrl, onClose }) => {
           <>
             <p className="qr-modal-heading">Do you want to generate a QR code for this asset?</p>
             <div className="qr-modal-buttons">
-              <button
-                className="qr-modal-button qr-modal-cancel-btn"
-                onClick={onClose}
-              >
+              <button className="qr-modal-button qr-modal-cancel-btn" onClick={onClose}>
                 Cancel
               </button>
-              <button
-                className="qr-modal-button qr-modal-generate-btn"
-                onClick={handleGenerateClick}
-              >
+              <button className="qr-modal-button qr-modal-generate-btn" onClick={handleGenerateClick}>
                 Generate QR Code
               </button>
             </div>
@@ -71,22 +90,13 @@ const QRCodeModal = ({ assetUrl, onClose }) => {
               <p className="qr-modal-url">{modifiedAssetUrl}</p>
             </div>
             <div className="qr-modal-buttons">
-              <button
-                className="qr-modal-button qr-modal-close-btn"
-                onClick={onClose}
-              >
+              <button className="qr-modal-button qr-modal-close-btn" onClick={onClose}>
                 Close
               </button>
-              <button
-                className="qr-modal-button qr-modal-download-btn"
-                onClick={handleDownload}
-              >
+              <button className="qr-modal-button qr-modal-download-btn" onClick={handleDownload}>
                 Download
               </button>
-              <button
-                className="qr-modal-button qr-modal-print-btn"
-                onClick={handlePrint}
-              >
+              <button className="qr-modal-button qr-modal-print-btn" onClick={handlePrint}>
                 Print
               </button>
             </div>

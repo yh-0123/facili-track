@@ -2,11 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
 import supabase from "../../backend/DBClient/SupaBaseClient"; // Import Supabase client
 import Cookies from "js-cookie"; // Import js-cookie for managing cookies
+import bcrypt from "bcryptjs"; // Import bcryptjs for password verification
 import "./userLogin.css"; // Import CSS file
 
 const UserLogin = ({ setIsLoggedIn }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate(); // Initialize useNavigate for redirection
 
   useEffect(() => {
@@ -21,22 +24,35 @@ const UserLogin = ({ setIsLoggedIn }) => {
 
   useEffect(() => {
     // Check if user cookie exists
-    const userCookie = Cookies.get("user");
-    if (userCookie) {
+    const userData = Cookies.get("userData");
+    if (userData) {
       setIsLoggedIn(true);
+      navigate("/dashboard");
     }
-  }, []); // Empty dependency array to run only once on mount
+  }, [navigate, setIsLoggedIn]); // Add dependencies
 
-  const handleLogin = async () => {
+  // Function to verify the password hash
+  const verifyPassword = async (plainPassword, hashedPassword) => {
+    // Returns true if passwords match, false otherwise
+    return await bcrypt.compare(plainPassword, hashedPassword);
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+    
+    // Clear previous error messages
+    setErrorMessage("");
+    
     // Basic validation
     if (!email || !password) {
-      alert("Please enter both email and password.");
+      setErrorMessage("Please enter both email and password.");
       return;
     }
 
+    setIsLoading(true);
+
     try {
       // Query the custom table for the user
-
       const { data, error } = await supabase
         .from("users")
         .select("*")
@@ -44,19 +60,20 @@ const UserLogin = ({ setIsLoggedIn }) => {
         .single(); // Ensure the data is not returned as an array
 
       if (error) {
-        alert(`Login failed: ${error.message}`);
+        setErrorMessage(`Login failed: ${error.message}`);
         return;
       }
 
       if (!data) {
-        alert("User not found.");
+        setErrorMessage("User not found.");
         return;
       }
 
-      // Validate the password (if stored as plain text, compare directly; otherwise, use bcrypt)
-      if (data.userPassword !== password) {
-        // Access data directly
-        alert("Invalid password.");
+      // Verify the hashed password
+      const isPasswordValid = await verifyPassword(password, data.userPassword);
+      
+      if (!isPasswordValid) {
+        setErrorMessage("Invalid password.");
         return;
       }
 
@@ -68,6 +85,7 @@ const UserLogin = ({ setIsLoggedIn }) => {
         userName: data.userName,
         userRole: data.userRole,
       };
+      
       // Store user session in cookies
       Cookies.set("userData", JSON.stringify(userData), { expires: 7 }); // Store session for 7 days
 
@@ -75,10 +93,11 @@ const UserLogin = ({ setIsLoggedIn }) => {
       setIsLoggedIn(true);
 
       // Redirect to the dashboard page
-      alert("Login successful!");
-      navigate("/dashboard"); // Replace "/dashboard" with your dashboard route
+      navigate("/dashboard"); // Redirect to dashboard
     } catch (err) {
-      alert(err.message);
+      setErrorMessage(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -87,23 +106,34 @@ const UserLogin = ({ setIsLoggedIn }) => {
       <div className="login-container">
         <h1>Welcome To</h1>
         <h2>FaciliTrack</h2>
-        <input
-          type="email"
-          placeholder="Email"
-          className="input-field"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="input-field"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button className="login-button" onClick={handleLogin}>
-          Login
-        </button>
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Email"
+            className="input-field"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="input-field"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          
+          {errorMessage && <p className="error-message">{errorMessage}</p>}
+          
+          <button 
+            type="submit" 
+            className="login-button" 
+            disabled={isLoading}
+          >
+            {isLoading ? "Logging in..." : "Login"}
+          </button>
+        </form>
         <p className="contact-text">No Account? Contact Your Administrator</p>
       </div>
     </div>

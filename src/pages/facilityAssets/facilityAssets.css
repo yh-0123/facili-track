@@ -1,143 +1,337 @@
 .facility-assets-page {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding-top: 60px; /* Adjust to match the top bar height */
-    padding-left: 30px;
-    padding-right: 30px;
-  }
-  
-  /* Updated search and button layout */
-  .search-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  /* Search input and button in one row */
-  .search-bar-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-grow: 1;
-  }
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding-top: 60px; /* Adjust to match the top bar height */
+  padding-left: 30px;
+  padding-right: 30px;
+  padding-bottom: 30px; /* Added padding at bottom */
+  max-height: 100vh;
+  overflow: hidden;
+}
 
-  .search-bar {
-    margin-top: 20px;
-  }
-  
-  .search-bar-container input {
-    padding: 10px;
-    flex: 0.5;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  
-  
-  /* Add New Asset Button */
-  .add-asset-btn {
-    background-color: #d18473;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    white-space: nowrap;
-    align-items: center; /* Center text */
-  }
+/* Search and button layout */
+.search-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  height: 50px;
+}
 
-  .add-asset-btn:hover {
-    background-color: #C15E48;
-  }
-  
-  /* Tab Navigation */
-  .tabs {
-    display: flex;
-    gap: 20px;
-    font-size: 16px;
-    margin-bottom: 20px;
-  }
-  
-  .active-tab {
-    font-weight: bold;
-    border-bottom: 2px solid #017575;
-    color: #017575;
-  }
+/* Search input and button in one row */
+.search-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+  margin: 0;
+  max-width: 500px;
+}
 
-  .status-filter {
-    display: flex;
-    gap: 10px;
-    margin: 0;
-    margin-bottom: 10px;
-  }
-  
-  .status-filter button {
-    padding: 6px 12px;
-    border: 1px solid #ccc;
-    background-color: #f2f2f2;
-    cursor: pointer;
-    border-radius: 6px;
-    font-size: 14px;
-  }
-  
-  .status-filter .active-filter {
-    background-color: #017575;
-    color: white;
-    border-color: #017575;
-  }
-  
-  
-  /* Grid Layout for Assets */
-  .asset-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    max-height: 550px; /* Adjust this height based on your layout needs */
-    overflow-y: auto; /* Enable vertical scrolling when content overflows */
-  }
-  
-  .asset-card {
-    background-color: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .view-details {
-    color: #d18473;
-    text-decoration: none;
-    font-weight: bold;
-    cursor: pointer;
-    background: none; /* Removes background color */
-    border: none; /* Removes border */
-    padding: 0; /* Removes padding */
-    transition: color 0.3s ease;
-  }
+.search-bar-container svg {
+  margin-left: 10px;
+  margin-bottom:20px;
+}
 
-  
+.search-bar-container input {
+  padding: 10px;
+  flex: 1;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+/* Add New Asset Button */
+.add-asset-btn {
+  background-color: #d18473;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.add-asset-btn:hover {
+  background-color: #C15E48;
+}
+
+/* Filters row - new layout */
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  background-color: #f9f9f9;
+  padding: 15px;
+  border-radius: 8px;
+  align-items: center;
+}
+
+/* Dropdown styles */
+.filter-dropdown {
+  position: relative;
+  min-width: 180px;
+}
+
+.dropdown-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.dropdown-toggle:hover {
+  border-color: #017575;
+}
+
+.dropdown-icon {
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+.dropdown-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-top: 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f2f2f2;
+}
+
+.dropdown-item.active {
+  background-color: #017575;
+  color: white;
+}
+
+/* Reset filters button */
+.reset-filters-btn {
+  background-color: #f2f2f2;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.reset-filters-btn:hover {
+  background-color: #e5e5e5;
+}
+
+/* Grid Layout for Assets */
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px); /* Adjusted for new filter layout */
+  padding-right: 5px; /* Space for scrollbar */
+}
+
+.asset-card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.asset-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.asset-card h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #333;
+  font-size: 18px;
+}
+
+.asset-card p {
+  margin: 5px 0;
+  color: #555;
+}
+
+/* Style for status indicators */
+.asset-card p:nth-of-type(3) {
+  font-weight: 500;
+}
+
+/* Specific styling for different statuses */
+.asset-card[data-status="Disposed"] {
+  border-left: 4px solid #d32f2f;
+}
+
+.asset-card[data-status="New"] {
+  border-left: 4px solid #2e7d32;
+}
+
+.asset-card[data-status="Installed"] {
+  border-left: 4px solid #1976d2;
+}
+
+.view-details {
+  color: #d18473;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: 10px;
+  align-self: flex-start;
+  transition: color 0.3s ease;
+}
+
 .view-details:hover {
-  color: #b35a42; /* Darker shade on hover */
+  color: #b35a42;
 }
 
 .view-details:active {
-  color: #8a3d2b; /* Even darker shade when clicked */
+  color: #8a3d2b;
 }
 
+/* Status messages */
+.loading-message,
+.error-message,
+.no-results {
+  text-align: center;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  grid-column: 1 / -1;
+}
+
+.loading-message {
+  color: #017575;
+}
+
+.error-message {
+  color: #d32f2f;
+}
+
+.no-results {
+  color: #666;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 992px) {
+  .asset-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    max-height: calc(100vh - 300px);
+  }
+}
 
 @media (max-width: 768px) {
-  .status-filter {
-    flex-wrap: wrap;
+  .facility-assets-page {
+    padding-left: 15px;
+    padding-right: 15px;
   }
-
-  .status-filter button {
-    flex: 1; /* Make buttons responsive */
-    min-width: 80px;
+  
+  .search-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    height: auto;
+    margin-bottom: 15px;
   }
-
-  .asset-grid{
-    max-height:510px;
-    overflow-y: auto;
+  
+  .search-bar-container {
+    max-width: 100%;
+  }
+  
+  .add-asset-btn {
+    align-self: flex-start;
+  }
+  
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-dropdown {
+    width: 100%;
+  }
+  
+  .reset-filters-btn {
+    margin-left: 0;
+    align-self: flex-start;
+    width: 100%;
+  }
+  
+  .asset-grid {
+    max-height: calc(100vh - 350px);
+  }
 }
+
+/* iPhone 13 specific adjustments (390px width) */
+@media (max-width: 391px) {
+  .facility-assets-page {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  .search-container {
+    margin-bottom: 10px;
+  }
+  
+  .filters-row {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .dropdown-toggle, 
+  .reset-filters-btn {
+    padding: 8px;
+    font-size: 13px;
+  }
+  
+  .asset-grid {
+    gap: 15px;
+    max-height: calc(95vh - 380px);
+  }
+  
+  .asset-card {
+    padding: 15px;
+  }
+  
+  .asset-card h3 {
+    font-size: 16px;
+  }
 }

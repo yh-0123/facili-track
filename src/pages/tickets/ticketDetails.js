@@ -1,22 +1,117 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import supabase from "../../backend/DBClient/SupaBaseClient"; // Import your existing Supabase client
 import TicketStatusEnum from "./ticketStatusEnum";
 import PageHeader from "../pageHeader";
+import userRolesEnum from "../userManagement/userRolesEnum";
+import Cookies from "js-cookie";
 import "./ticketDetails.css";
 
 const TicketDetails = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { ticket } = location.state || {}; // Retrieve the ticket details from state
   const [submittedBy, setSubmittedBy] = useState("");
   const [ticketStatus, setTicketStatus] = useState(ticket?.ticketStatus || ""); // State to manage ticket status
   const [showModal, setShowModal] = useState(false);
   const [workers, setWorkers] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    // Get current user from cookie
+    const getCurrentUser = () => {
+      try {
+        const userData = Cookies.get("userData");
+        if (userData) {
+          const user = JSON.parse(userData);
+          setCurrentUser(user);
+          return user;
+        }
+        return null;
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        return null;
+      }
+    };
+
+    // Check if user is authorized to view this ticket
+    const checkAuthorization = async (user, ticketData) => {
+      if (!user || !ticketData) {
+        setAuthorized(false);
+        return false;
+      }
+
+      // Admin can view all tickets
+      if (user.userRole === userRolesEnum.ADMIN) {
+        setAuthorized(true);
+        return true;
+      }
+
+      // Facility worker can view tickets assigned to them
+      if (user.userRole === userRolesEnum.FACILITY_WORKER) {
+        if (ticketData.assignedWorkerId === user.userId) {
+          setAuthorized(true);
+          return true;
+        }
+      }
+
+      // Resident can view tickets they submitted
+      if (user.userRole === userRolesEnum.RESIDENT) {
+        if (ticketData.reportedResidentId === user.userId) {
+          setAuthorized(true);
+          return true;
+        }
+      }
+
+      setAuthorized(false);
+      return false;
+    };
+
+    const initializeComponent = async () => {
+      setLoading(true);
+      const user = getCurrentUser();
+      
+      if (!ticket) {
+        setLoading(false);
+        return;
+      }
+      
+      // If we need to fetch the complete ticket data from the database
+      // (In case we only have ticketId)
+      let ticketData = ticket;
+      if (ticket.ticketId && (!ticket.reportedResidentId || !ticket.assignedWorkerId)) {
+        const { data, error } = await supabase
+          .from("ticket")
+          .select("*")
+          .eq("ticketId", ticket.ticketId)
+          .single();
+          
+        if (!error) {
+          ticketData = data;
+        }
+      }
+      
+      const isAuthorized = await checkAuthorization(user, ticketData);
+      
+      if (!isAuthorized) {
+        // Redirect unauthorized users
+        alert("You are not authorized to view this ticket");
+        navigate("/tickets");
+        return;
+      }
+      
+      setLoading(false);
+    };
+
+    initializeComponent();
+  }, [ticket, navigate]);
 
   useEffect(() => {
     const fetchUserName = async () => {
-      if (ticket?.reportedResidentID) {
+      if (ticket?.reportedResidentId) {
         const { data, error } = await supabase
           .from("users")
           .select("userName")
@@ -32,16 +127,20 @@ const TicketDetails = () => {
       }
     };
 
-    fetchUserName();
-  }, [ticket?.reportedResidentId]);
+    if (authorized) {
+      fetchUserName();
+    }
+  }, [ticket?.reportedResidentId, authorized]);
 
   // Fetch facility workers
   useEffect(() => {
+    if (!authorized || currentUser?.userRole !== userRolesEnum.ADMIN) return;
+    
     const fetchWorkers = async () => {
       const { data, error } = await supabase
         .from("users")
         .select("*")
-        .eq("userRole", 1);
+        .eq("userRole", userRolesEnum.FACILITY_WORKER);
       if (error) {
         console.error("Error fetching workers:", error);
       } else {
@@ -50,11 +149,11 @@ const TicketDetails = () => {
     };
 
     fetchWorkers();
-  }, []);
+  }, [authorized, currentUser]);
 
   // Assign Ticket
   const handleAssignTicket = async () => {
-    if (!ticket?.ticketId) return;
+    if (!ticket?.ticketId || !selectedWorker) return;
     const { data, error } = await supabase
       .from("ticket")
       .update({
@@ -62,16 +161,14 @@ const TicketDetails = () => {
         ticketStatus: TicketStatusEnum.ASSIGNED,
       })
       .eq("ticketId", ticket.ticketId)
-      .single();
+      .select();
 
     if (error) {
       console.error("Error assigning ticket:", error);
     } else {
       setShowModal(false);
-      ticket.assignedTo = selectedWorker.userName;
       setTicketStatus(TicketStatusEnum.ASSIGNED);
     }
-    setShowModal(false);
   };
 
   // Handle resolve ticket status update
@@ -81,9 +178,12 @@ const TicketDetails = () => {
     // Update the ticket status in the database
     const { data, error } = await supabase
       .from("ticket")
-      .update({ ticketStatus: TicketStatusEnum.RESOLVED })
+      .update({ 
+        ticketStatus: TicketStatusEnum.RESOLVED,
+        updatedBy: currentUser?.userName || "System" 
+      })
       .eq("ticketId", ticket.ticketId)
-      .single();
+      .select();
 
     if (error) {
       console.error("Error resolving ticket:", error);
@@ -92,9 +192,23 @@ const TicketDetails = () => {
     }
   };
 
-  if (!ticket) {
-    return <p>No ticket details available.</p>;
+  if (loading) {
+    return <p>Loading ticket details...</p>;
   }
+
+  if (!ticket || !authorized) {
+    return <p>No ticket details available or you are not authorized to view this ticket.</p>;
+  }
+
+  const canAssignTicket = 
+    currentUser?.userRole === userRolesEnum.ADMIN && 
+    ticketStatus !== TicketStatusEnum.RESOLVED;
+    
+  const canResolveTicket = 
+    (currentUser?.userRole === userRolesEnum.ADMIN || 
+     (currentUser?.userRole === userRolesEnum.FACILITY_WORKER && 
+      ticket.assignedWorkerId === currentUser?.userId)) && 
+    ticketStatus !== TicketStatusEnum.RESOLVED;
 
   return (
     <div className="ticket-details-page">
@@ -147,7 +261,7 @@ const TicketDetails = () => {
               <strong>Attachment:</strong>
             </p>
             <div className="attachment-box">
-              {ticket.attachment ? (
+              {ticket.ticketAttachment ? (
                 <img src={ticket.ticketAttachment} alt="Attachment" />
               ) : (
                 "(No Image)"
@@ -159,7 +273,12 @@ const TicketDetails = () => {
             <p className="update-note">
               {ticket.updateNotes || "No updates available"}
             </p>
-            <button className="add-notes-btn">💬 Add Notes...</button>
+            
+            {(currentUser?.userRole === userRolesEnum.ADMIN || 
+              (currentUser?.userRole === userRolesEnum.FACILITY_WORKER && 
+               ticket.assignedWorkerId === currentUser?.userId)) && (
+              <button className="add-notes-btn">💬 Add Notes...</button>
+            )}
 
             <p>
               <strong>Updated By:</strong> <h5>{ticket.updatedBy || "N/A"}</h5>
@@ -169,19 +288,19 @@ const TicketDetails = () => {
       </div>
 
       <div className="ticket-actions">
-        {/* Conditionally render the buttons if the ticket status is not "Resolved" */}
-        {ticketStatus !== TicketStatusEnum.RESOLVED && (
-          <>
-            <button className="assign-btn" onClick={() => setShowModal(true)}>
-              Assign Ticket
-            </button>
-            <button className="resolve-btn" onClick={handleResolveTicket}>
-              Resolve Ticket
-            </button>
-          </>
+        {canAssignTicket && (
+          <button className="assign-btn" onClick={() => setShowModal(true)}>
+            Assign Ticket
+          </button>
+        )}
+        
+        {canResolveTicket && (
+          <button className="resolve-btn" onClick={handleResolveTicket}>
+            Resolve Ticket
+          </button>
         )}
       </div>
-      <button className="back-btn" onClick={() => window.history.back()}>
+      <button className="back-btn" onClick={() => navigate('/tickets')}>
         Back
       </button>
 
