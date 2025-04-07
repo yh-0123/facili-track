@@ -1,41 +1,45 @@
-Container Styling
+/* Container Styling */
 .create-ticket {
     display: flex;
+    flex:1;
     flex-direction: column;
     align-items: center;
-    padding: 20px;
-    max-width: 400px;
-    margin: 0 auto;
+    padding-top:60px;
+    padding-left: 30px;
+    padding-right: 30px;
     background-color: #f4f8fb;
-    min-height: 100vh;
+    height: 100%;
+    font-family: Arial, sans-serif;
+  }
+
+  .create-ticket .page-header{
+    width:100%;
+    margin:0;
   }
   
   /* Back Button */
   .back1-button {
-    background: none;
+    width: 140px;
+    height: 45px;
+    background: #d46a4f;
+    color: white;
     border: none;
-    font-size: 20px;
-    position: absolute;
-    top: 20px;
-    left: 20px;
+    border-radius: 8px;
     cursor: pointer;
-  }
-  
-  /* Title */
-  .title {
-    font-size: 22px;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 20px;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 10px 20px;
+    transition: all 0.3s ease;
   }
   
   /* Form Styling */
   .ticket-form {
-    width: 100%;
+    width: 97%;
     background: white;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
   }
   
   .ticket-form label {
@@ -54,6 +58,7 @@ Container Styling
     font-size: 14px;
     box-sizing: border-box; /* Prevents overflow */
     resize: none;
+    font-family: Arial, sans-serif;
   }
   
   .ticket-form textarea {
@@ -104,19 +109,38 @@ Container Styling
     background-color: #d48568;
   }
   
-  /* Responsive Design for iPhone 13 */
-  @media screen and (max-width: 390px) {
-    .create-ticket {
-      padding: 15px;
-    }
-  
-    .ticket-form {
-      padding: 15px;
-    }
-  
-    .submit1-button {
-      padding: 10px;
-      font-size: 14px;
-    }
+/* Responsive Design for iPhone 13 */
+@media screen and (max-width: 390px) {
+  .create-ticket {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 auto;
+    background-color: #f4f8fb;
+    min-height: 100vh;
   }
+
+  .ticket-form {
+    padding: 15px;
+  }
+
+  .submit1-button {
+    padding: 0px;
+    font-size: 14px;
+  }
+
+  .back1-button {
+    background: none;
+    border: none;
+    font-size: 20px;
+    position: absolute;
+    top: 20px;
+    left: 0px;
+    cursor: pointer;
+  }
+}
   
+  
+
+    

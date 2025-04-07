@@ -1,0 +1,11 @@
+1. Change to Supabase Auth for password storage
+2. Add Asset
+3. generate qr code (included in add asset flow)
+4. print qr code
+5. assign ticket
+6. add notes to ticket, admin, facility worker, residents can add notes to the same ticket
+7. notification when ticket status is updated / someone add notes (notify resident, admin, and the worker assigned)
+8. different user, different access
+9. search function for asset based on ticket id, ticket can search with ticket title
+10. create ticket (need can pin location and upload attachment (max 3 attachment))
+11. User profile linking

@@ -10,6 +10,16 @@ const UserLogin = ({ setIsLoggedIn }) => {
   const navigate = useNavigate(); // Initialize useNavigate for redirection
 
   useEffect(() => {
+    // Hide top bar and sidebar on login page
+    document.body.classList.add("hide-layout");
+
+    return () => {
+      // Restore layout when leaving login page
+      document.body.classList.remove("hide-layout");
+    };
+  }, []);
+
+  useEffect(() => {
     // Check if user cookie exists
     const userCookie = Cookies.get("user");
     if (userCookie) {
@@ -53,7 +63,11 @@ const UserLogin = ({ setIsLoggedIn }) => {
       // Successful login
       console.log("User logged in:", data);
 
-      var userData = { userId: data.userId, userName: data.userName };
+      var userData = {
+        userId: data.userId,
+        userName: data.userName,
+        userRole: data.userRole,
+      };
       // Store user session in cookies
       Cookies.set("userData", JSON.stringify(userData), { expires: 7 }); // Store session for 7 days
 
@@ -64,8 +78,7 @@ const UserLogin = ({ setIsLoggedIn }) => {
       alert("Login successful!");
       navigate("/dashboard"); // Replace "/dashboard" with your dashboard route
     } catch (err) {
-      console.error("Unexpected error:", err);
-      alert("An unexpected error occurred. Please try again.");
+      alert(err.message);
     }
   };
 

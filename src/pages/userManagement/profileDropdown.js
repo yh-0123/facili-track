@@ -1,39 +1,130 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronDown, User } from "lucide-react";
+import { ChevronDown, User, Bell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import supabase from "../../backend/DBClient/SupaBaseClient"; // Import Supabase client
+import Cookies from "js-cookie"; // Import js-cookie for managing cookies
 import "./profileDropdown.css";
 
-const ProfileDropdown = ({ userName = "Alex Ong" }) => {
+const ProfileDropdown = ({ updateLoginState }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false); // Track notification dropdown visibility
+  const [userName, setUserName] = useState(""); // State to store user's name
+  const [notifications, setNotifications] = useState([]); // State to store notifications
   const dropdownRef = useRef(null);
+  const notificationRef = useRef(null); // Ref for notification dropdown
+  // Add this inside useEffect to get userId from cookies or Supabase
+  const [userId, setUserId] = useState("");
   const navigate = useNavigate();
 
-  // Function to handle logout
-  const handleLogout = () => {
-    // Clear any authentication data (e.g., tokens, user info) from localStorage or sessionStorage
-    localStorage.removeItem("user"); // Replace with your token or auth data key
-    sessionStorage.removeItem("user"); // Replace with your token or auth data key
+  // Fetch user data from Supabase
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const userData = Cookies.get("userData");
+        if (userData) {
+          let userInfo;
+          try {
+            userInfo = JSON.parse(userData);
+            // Set the userId from cookie
+            setUserId(userInfo.userId);
+          } catch (parseError) {
+            console.error("Error parsing userData:", parseError);
+            setUserName("Unknown User");
+            return;
+          }
+          const { data, error } = await supabase
+            .from("users")
+            .select("*")
+            .eq("userId", userInfo.userId)
+            .single();
 
-    // Redirect to the login page
-    navigate("/login"); // Adjust the login route if necessary
+          if (data) {
+            setUserName(data.userName);
+          } else if (error) {
+            console.error("Error fetching userName:", error);
+            setUserName("Unknown User"); // Fallback to "User" if no data is found
+          }
+        }
+      } catch (error) {
+        console.error("Unexpected error:", error);
+        setUserName("Unknown User"); // Fallback to "User" on unexpected errors
+      }
+    };
+
+    fetchUserName();
+  }, []); // Empty dependency array ensures this runs once on mount/unmount
+
+  // Function to handle logout
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut(); // Sign out from Supabase Auth
+      Cookies.remove("userData"); // Remove user cookie
+
+      // Call the updateLoginState function passed from App.js
+      if (updateLoginState) {
+        updateLoginState(false);
+      }
+
+      navigate("/login"); // Redirect to login page
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
-  // Close dropdown if clicked outside
+  const handleNotificationClick = async () => {
+    setIsNotificationOpen(!isNotificationOpen);
+
+    if (!isNotificationOpen && userId) {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("recipient_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Failed to fetch notifications", error);
+      } else {
+        setNotifications(data);
+      }
+    }
+  };
+
+  // Close dropdown if clicked outside (handles both profile and notification dropdowns)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
+
+      // Close notification dropdown if clicked outside
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setIsNotificationOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+
+    // Clean up the event listener when component unmounts
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount/unmount
 
   return (
     <div className="profile-container" ref={dropdownRef}>
+      {/* Notification Button */}
+      <button
+        className="notification-button"
+        aria-label="Notifications"
+        onClick={handleNotificationClick}
+      >
+        <Bell color="#6b7280" />
+      </button>
+
+      {/* Profile Dropdown Button */}
       <button
         className={`profile-button ${isOpen ? "active" : ""}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -42,9 +133,32 @@ const ProfileDropdown = ({ userName = "Alex Ong" }) => {
         <div className="profile-icon">
           <User size={20} color="#6b7280" />
         </div>
-        <span className="profile-name">{userName}</span>
+        <span className="profile-name">
+          {userName ? userName : "Loading..."}
+        </span>
         <ChevronDown size={18} className="chevron-icon" />
       </button>
+
+      {/* Notification Dropdown */}
+      {isNotificationOpen && (
+        <div className="notification-dropdown" ref={notificationRef}>
+          <h4>Notifications</h4>
+          {notifications.length === 0 ? (
+            <p>No new notifications</p>
+          ) : (
+            <ul>
+              {notifications.map((notification) => (
+                <li key={notification.id} className="notification-item">
+                  <p>{notification.message}</p>{" "}
+                  {/* Display the notification message */}
+                  <small>{notification.created_at}</small>{" "}
+                  {/* Display the timestamp */}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {isOpen && (
         <div className="dropdown-menu" role="menu">
@@ -54,13 +168,13 @@ const ProfileDropdown = ({ userName = "Alex Ong" }) => {
           <button
             className="dropdown-item"
             role="menuitem"
-            onClick={handleLogout} // Trigger the logout logic
+            onClick={handleLogout}
           >
             Logout
           </button>
-          <button className="dropdown-item deactivate" role="menuitem">
+          {/* <button className="dropdown-item deactivate" role="menuitem">
             Deactivate Account
-          </button>
+          </button> */}
         </div>
       )}
     </div>

@@ -6,7 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { useState, useEffect } from "react";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/dashboard";
 import FacilityAssets from "./pages/facilityAssets/facilityAssets";
 import Tickets from "./pages/tickets/tickets";
 import CreateAccount from "./pages/userManagement/createAccount";
@@ -16,24 +16,47 @@ import ProfileDropdown from "./pages/userManagement/profileDropdown";
 import AddAsset from "./pages/facilityAssets/addAsset";
 import AssetDetails from "./pages/facilityAssets/assetDetails";
 import TicketDetails from "./pages/tickets/ticketDetails";
-import ResidentHome from "./pages/residentHome"; 
+import ResidentHome from "./pages/residentHome";
 import CreateTicket from "./pages/tickets/createTicket";
 import TicketHistory from "./pages/tickets/ticketHistory";
+import userRolesEnum from "./pages/userManagement/userRolesEnum";
+import Cookies from "js-cookie";
+
 import "./pages/index.css";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
+  const [sidebarOpen, setSidebarOpen] = useState(false); // side bar state
+  const [userRole, setUserRole] = useState(null); // Track user role
+  // Add a state to track when login/logout occurs
+  const [authChangeCounter, setAuthChangeCounter] = useState(0);
+
+  // Function to update login state and trigger effect
+  const updateLoginState = (loggedIn) => {
+    setIsLoggedIn(loggedIn);
+    // Increment counter to trigger useEffect
+    setAuthChangeCounter(prev => prev + 1);
+  };
 
   useEffect(() => {
-    const userCookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("userData="));
-    if (userCookie) {
-      setIsLoggedIn(true);
+    const userData = Cookies.get("userData");
+
+    if (userData) {
+      let userInfo;
+      try {
+        userInfo = JSON.parse(userData);
+        setIsLoggedIn(true);
+        setUserRole(userInfo.userRole); // Set user role from cookie
+      } catch (parseError) {
+        console.error("Error parsing userData:", parseError);
+        setIsLoggedIn(false);
+        setUserRole(null);
+      }
     } else {
       setIsLoggedIn(false);
+      setUserRole(null);
     }
-  }, []); // Add an empty dependency array to run only once
+  }, [authChangeCounter]); // Now depends on authChangeCounter which will update on login/logout
 
   return (
     <Router>
@@ -41,27 +64,55 @@ function App() {
         {isLoggedIn && (
           <>
             {/* Sidebar Navigation */}
-            <nav className="sidebar">
+            <nav className={`sidebar ${sidebarOpen ? "open" : ""}`}>
               <h2 style={{ color: "white" }}>FaciliTrack</h2>
               <ul>
-                <li>
-                  <Link to="/dashboard">Dashboard</Link>
-                </li>
-                <li>
-                  <Link to="/assets">Facility Assets</Link>
-                </li>
-                <li>
-                  <Link to="/tickets">Tickets</Link>
-                </li>
-                <li>
-                  <Link to="/create-account">Create New Account</Link>
-                </li>
+                {userRole === userRolesEnum.ADMIN && (
+                  <>
+                    <li>
+                      <Link to="/dashboard">Dashboard</Link>
+                    </li>
+                    <li>
+                      <Link to="/assets">Facility Assets</Link>
+                    </li>
+                    <li>
+                      <Link to="/tickets">Tickets</Link>
+                    </li>
+                    <li>
+                      <Link to="/create-account">Create New Account</Link>
+                    </li>
+                  </>
+                )}
+                {userRole === userRolesEnum.FACILITY_WORKER && (
+                  <>
+                    <li>
+                      <Link to="/assets">Facility Assets</Link>
+                    </li>
+                    <li>
+                      <Link to="/tickets">Tickets</Link>
+                    </li>
+                  </>
+                )}
               </ul>
             </nav>
 
-            {/* Profile Dropdown in Top-Right */}
+            {/* Overlay */}
+            {sidebarOpen && (
+              <div
+                className="sidebar-overlay"
+                onClick={() => setSidebarOpen(false)}
+              ></div>
+            )}
+
+            {/* Topbar with Hamburger */}
             <div className="topbar">
-              <ProfileDropdown />
+              <div
+                className="hamburger"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                ☰
+              </div>
+              <ProfileDropdown updateLoginState={updateLoginState} />
             </div>
           </>
         )}
@@ -72,9 +123,9 @@ function App() {
               path="/"
               element={
                 isLoggedIn ? (
-                  <Navigate to="/dashboard" />
+                  <Navigate to="/Tickets" />
                 ) : (
-                  <UserLogin setIsLoggedIn={setIsLoggedIn} />
+                  <UserLogin setIsLoggedIn={updateLoginState} />
                 )
               }
             />
@@ -98,20 +149,19 @@ function App() {
               path="/view-profile"
               element={isLoggedIn ? <ViewProfile /> : <Navigate to="/" />}
             />
-            <Route path="/add-asset" element={<AddAsset />} 
+            <Route
+              path="/add-asset"
+              element={isLoggedIn ? <AddAsset /> : <Navigate to="/" />}
             />
-            <Route path="/asset-details/:id" element={<AssetDetails />}
+            <Route path="/asset-details/:id" element={<AssetDetails />} />
+            <Route path="/ticket/:id" element={<TicketDetails />} />
+            <Route path="/resident-home" element={<ResidentHome />} />
+            <Route
+              path="/login"
+              element={<UserLogin setIsLoggedIn={updateLoginState} />}
             />
-            <Route path="/ticket/:id" element={<TicketDetails />} 
-            />
-            <Route path="/resident-home" element={<ResidentHome />} 
-            />
-            <Route path="/login" element={<UserLogin />} 
-            />
-            <Route path="/create-ticket" element={<CreateTicket />} 
-            />
-            <Route path="/ticket-history" element={<TicketHistory />} 
-            />
+            <Route path="/create-ticket" element={<CreateTicket />} />
+            <Route path="/ticket-history" element={<TicketHistory />} />
           </Routes>
         </div>
       </div>

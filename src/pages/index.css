@@ -40,6 +40,7 @@ body {
   background-color: #004d4d;
   color: white;
   padding: 20px 0;
+  transition: transform 0.3s ease; /* Smooth transition for hiding */
 }
 
 .sidebar h2 {
@@ -84,4 +85,60 @@ body {
   margin-top: 10px;
   display: flex;
   justify-content: space-between;
+}
+
+
+/* Hamburger Icon */
+.hamburger {
+  display: none;
+  font-size: 26px;
+  cursor: pointer;
+  margin-right: auto;
+  padding: 10px;
+}
+
+/* Sidebar Sliding Panel */
+.sidebar.open {
+  display: block;
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 200px;
+  height: calc(100vh - 60px);
+  background-color: #004d4d;
+  z-index: 999;
+  padding: 20px 0;
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Media Query for iPhone 13 and smaller devices (max-width: 390px) */
+@media (max-width: 391px) {
+  /* Hide Sidebar */
+  .sidebar {
+    display: none;
+  }
+
+  /* Adjust top bar */
+  .topbar {
+    left: 0;
+    right: 0;
+    padding: 0 10px;
+  }
+
+  .hamburger {
+    display: block;
+    color: #004d4d;
+    font-weight: bold;
+  }
+
+  /* Overlay when sidebar is open on mobile */
+.sidebar-overlay {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 998;
+}
 }

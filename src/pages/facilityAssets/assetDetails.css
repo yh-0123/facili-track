@@ -1,0 +1,136 @@
+.asset-details-page {
+  display: flex;
+  justify-content: center;
+  height:100%;
+}
+
+.asset-details-page .content {
+  flex: 1;
+  padding: 30px;
+  padding-top: 60px;
+}
+
+/* Asset Details Container */
+.asset-details {
+  background: white;
+  padding: 0px 20px;
+  border-radius: 5px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  max-height: 700px; /* Adjust this height based on your layout needs */
+  overflow-y: auto; /* Enable vertical scrolling when content overflows */
+}
+
+/* Heading Styles */
+.asset-details h3 {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #000000;
+  background-color: #d7d7d7;
+  padding: 10px;  /* Adds space inside the background */
+  min-height: 20px; /* Ensures a consistent height */
+  display: flex;
+  align-items: center; /* Centers text vertically */
+}
+
+/* Grid Layout for Data */
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.details-grid p {
+  font-size: 1rem;
+  color: #444;
+  font-weight: normal;
+}
+
+.details-grid p strong {
+  font-weight: bold;
+  display: block;
+  color: #000;
+}
+
+/* Action Buttons */
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+/* Back Button */
+.cancel-btn,
+.back-btn {
+  background: #E8A897;
+  color: white;
+}
+
+.cancel-btn:hover,
+.back-btn:hover {
+  background: #C15E48;
+}
+
+/* Edit Button */
+.save-btn,
+.edit-btn {
+  background:none;
+  border: 3px solid #D46A4F;
+  color: black;
+}
+
+.save-btn:hover,
+.edit-btn:hover {
+  background: #D46A4F;
+  color:white;
+}
+
+/* Print QR Code Button */
+.qr-btn {
+  background: #E8A897;
+  color: white;
+}
+
+.qr-btn:hover {
+  background: #C15E48;
+}
+
+/* Loading and Not Found Text */
+.loading-text, .not-found-text {
+  font-size: 1.2rem;
+  text-align: center;
+  color: #999;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .details-grid {
+      grid-template-columns: repeat(2, 1fr);
+  }
+
+  .button-group {
+    flex-direction: row;
+    gap: 10px;
+    position: relative; /* Ensure it stacks properly */
+    padding: 0px;
+    margin-top: 30px;
+  }
+
+
+  .asset-details {
+    max-height: 600px; /* Adjust this height based on your layout needs */
+    overflow-y: auto; /* Enable vertical scrolling when content overflows */
+  }
+  
+}

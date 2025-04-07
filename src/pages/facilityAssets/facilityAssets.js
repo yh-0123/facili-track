@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { FaSearch } from "react-icons/fa";
 import "./facilityAssets.css";
 import "../index.css";
@@ -12,6 +12,7 @@ const FacilityAssets = () => {
   const [disposedAssets, setDisposedAssets] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const [currentAssetStatusFilter, setCurrentAssetStatusFilter] = useState("All");
 
   // Fetch assets from the Supabase database
   useEffect(() => {
@@ -21,7 +22,7 @@ const FacilityAssets = () => {
         const { data: currentData, error: currentError } = await supabase
           .from("facility_asset")
           .select("*")
-          .eq("assetStatus", "Installed"); // Filter for current assets
+          .in("assetStatus", ["New", "Installed"]); // Filter for current assets
 
         if (currentError) {
           console.error("Error fetching current assets:", currentError.message);
@@ -52,13 +53,21 @@ const FacilityAssets = () => {
   }, []);
 
   // Filter assets based on the search query
-  const filteredCurrentAssets = currentAssets.filter((asset) =>
+  const filteredCurrentAssets = currentAssets
+  .filter((asset) =>
     asset.assetName.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  .filter((asset) =>
+    currentAssetStatusFilter === "All"
+      ? true
+      : asset.assetStatus === currentAssetStatusFilter
   );
 
   const filteredDisposedAssets = disposedAssets.filter((asset) =>
     asset.assetName.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  //TODO: change to search based on assetId
 
   return (
     <div className="facility-assets-page">
@@ -89,7 +98,6 @@ const FacilityAssets = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="search">Search</button>
         </div>
         <button
           className="add-asset-btn"
@@ -99,38 +107,65 @@ const FacilityAssets = () => {
         </button>
       </div>
 
-      <div className="asset-grid">
-        {activeTab === "current" &&
-          filteredCurrentAssets.map((asset) => (
-            <div className="asset-card" key={asset.id}>
-              <h3>{asset.id}</h3>
-              <p>Name: {asset.assetName}</p>
-              <p>Category: {asset.assetType}</p>
-              <p>Installation Date: {asset.assetInstallationDate}</p>
-              <p>Last Maintenance Date: {asset.lastMaintenance || "N/A"}</p>
-              <button
-                className="view-details"
-                onClick={() => navigate(`/asset-details/${asset.id}`)}
-              >
-                View Details
-              </button>
-            </div>
-          ))}
+      {activeTab === "current" && (
+        <div className="status-filter">
+          <button
+            className={currentAssetStatusFilter === "All" ? "active-filter" : ""}
+            onClick={() => setCurrentAssetStatusFilter("All")}
+          >
+            All
+          </button>
+          <button
+            className={currentAssetStatusFilter === "New" ? "active-filter" : ""}
+            onClick={() => setCurrentAssetStatusFilter("New")}
+          >
+            New
+          </button>
+          <button
+            className={currentAssetStatusFilter === "Installed" ? "active-filter" : ""}
+            onClick={() => setCurrentAssetStatusFilter("Installed")}
+          >
+            Installed
+          </button>
+        </div>
+      )}
 
-        {activeTab === "disposed" &&
-          filteredDisposedAssets.map((asset) => (
-            <div className="asset-card" key={asset.id}>
-              <h3>{asset.id}</h3>
-              <p>Name: {asset.assetName}</p>
-              <p>Category: {asset.assetType}</p>
-              <p>Disposal Date: {asset.disposalDate || "N/A"}</p>
-              <button
-                className="view-details"
-                onClick={() => navigate(`/asset-details/${asset.id}`)}
-              >
-                View Details
-              </button>
-            </div>
+      <div className="asset-grid">
+      {activeTab === "current" &&
+        filteredCurrentAssets.map((asset) => (
+          <div className="asset-card" key={asset.id}>
+            <h3>{asset.id}</h3>
+            <p>Asset ID: {asset.assetId}</p>
+            <p>Name: {asset.assetName}</p>
+            <p>Category: {asset.assetType}</p>
+            <p>Status: {asset.assetStatus}</p>
+            <p>Last Maintenance Date: {asset.lastMaintenance || "N/A"}</p>
+
+            <Link
+                  to={`/asset-details/${asset.assetId}`}
+                  state={{ asset }} // Pass the ticket details as state
+                  className="view-details"
+                >
+                  View Details
+                </Link>
+          </div>
+        ))}
+
+      {activeTab === "disposed" &&
+        filteredDisposedAssets.map((asset) => (
+          <div className="asset-card" key={asset.id}>
+            <p>Asset ID: {asset.assetId}</p>
+            <p>Name: {asset.assetName}</p>
+            <p>Category: {asset.assetType}</p>
+            <p>Disposal Date: {asset.assetDisposalDate || "N/A"}</p>
+            <Link
+                  to={`/asset-details/${asset.assetId}`}
+                  state={{ asset }} // Pass the ticket details as state
+                  className="view-details"
+                >
+                  View Details
+                </Link>
+          </div>
           ))}
       </div>
     </div>

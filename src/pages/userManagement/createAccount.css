@@ -1,3 +1,8 @@
+.create-account {
+    padding-top: 60px; /* Adjust to match the top bar height */
+    padding-left: 30px;
+}
+
 /* Page container */
 .create-account-page {
     display: flex;
@@ -5,7 +10,7 @@
     align-items: center;
     width: 100%;
     max-width: 600px;
-    margin: 120px auto;
+    margin: 80px auto;
     padding: 30px;
     padding-left: 10px;
     padding-right: 10px;
@@ -48,7 +53,7 @@ html, body {
 .tabs span {
     font-size: 1rem;
     padding: 8px 12px;
-    border-bottom: 2px solid transparent;
+    border-bottom: 2.5px solid transparent;
     color: #555;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -56,8 +61,8 @@ html, body {
 
 .tabs span.active-tab {
     font-weight: bold;
-    color: #007bff;
-    border-bottom: 2px solid #007bff;
+    color: #017575;
+    border-bottom: 2.5px solid #017575;
 }
 
 /* Form */
@@ -89,7 +94,7 @@ html, body {
 }
 
 .account-form input:focus {
-    border-color: #007bff;
+    border-color: #017575;
 }
 
 /* Error & Success Messages */
@@ -117,7 +122,7 @@ html, body {
 }
 
 .create-account-btn:hover {
-    background: #d18066;
+    background: #C15E48;
 }
 
 /* Add scrollbar styling for better UI */
@@ -160,5 +165,80 @@ html, body {
     border-radius: 8px;
     resize: none;
     font-size: 14px;
+  }
+  
+  .password-wrapper {
+    position: relative;
+    width: 100%;
+  }
+  
+  .password-wrapper input {
+    width: 100%;
+  }
+  
+  .eye-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+  }
+
+  @media (max-width: 391px) {
+    .create-account-page {
+      width: 90%; /* Ensures it doesn’t squeeze too much */
+      max-width: 100%;
+      margin: 70px auto;
+      padding: 20px;
+      box-shadow: none;
+      border-radius: 0;
+    }
+
+    .create-account {
+        padding-left: 0;
+        
+      }
+    
+    .create-account .page-header{
+        padding-left:30px;
+    }
+      
+    .tabs {
+      flex-wrap: wrap; /* Prevents cramming */
+      justify-content: space-between;
+    }
+  
+    .tabs span {
+      flex: 1;
+      text-align: center;
+      font-size: 0.9rem;
+      padding: 5px;
+    }
+  
+    .account-form {
+      padding: 20px;
+      width: 90%;
+    }
+  
+    .account-form input,
+    .account-form textarea {
+      width: 90%;
+      font-size: 0.95rem;
+      padding: 10px;
+    }
+  
+    .create-account-btn {
+      width: 100%;
+      font-size: 1rem;
+      padding: 10px;
+    }
+  
+    .password-wrapper {
+      width: 100%;
+    }
+  
+    .eye-icon {
+      right: 8px;
+    }
   }
   

@@ -120,7 +120,7 @@
   }
   
   /* Responsive Design for iPhone 13 */
-@media screen and (max-width: 430px) {
+@media screen and (max-width: 391px) {
     .resident-home {
       padding: 2rem;
     }

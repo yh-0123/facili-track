@@ -22,6 +22,10 @@
     gap: 10px;
     flex-grow: 1;
   }
+
+  .search-bar {
+    margin-top: 20px;
+  }
   
   .search-bar-container input {
     padding: 10px;
@@ -30,15 +34,7 @@
     border-radius: 5px;
   }
   
-  .search-bar-container button {
-    padding: 10px 15px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-right: 10px;
-  }
+  
   
   /* Add New Asset Button */
   .add-asset-btn {
@@ -49,6 +45,11 @@
     border-radius: 5px;
     cursor: pointer;
     white-space: nowrap;
+    align-items: center; /* Center text */
+  }
+
+  .add-asset-btn:hover {
+    background-color: #C15E48;
   }
   
   /* Tab Navigation */
@@ -61,14 +62,40 @@
   
   .active-tab {
     font-weight: bold;
-    border-bottom: 2px solid #007bff;
+    border-bottom: 2px solid #017575;
+    color: #017575;
   }
+
+  .status-filter {
+    display: flex;
+    gap: 10px;
+    margin: 0;
+    margin-bottom: 10px;
+  }
+  
+  .status-filter button {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background-color: #f2f2f2;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  
+  .status-filter .active-filter {
+    background-color: #017575;
+    color: white;
+    border-color: #017575;
+  }
+  
   
   /* Grid Layout for Assets */
   .asset-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
+    max-height: 550px; /* Adjust this height based on your layout needs */
+    overflow-y: auto; /* Enable vertical scrolling when content overflows */
   }
   
   .asset-card {
@@ -97,4 +124,20 @@
 .view-details:active {
   color: #8a3d2b; /* Even darker shade when clicked */
 }
-  
+
+
+@media (max-width: 768px) {
+  .status-filter {
+    flex-wrap: wrap;
+  }
+
+  .status-filter button {
+    flex: 1; /* Make buttons responsive */
+    min-width: 80px;
+  }
+
+  .asset-grid{
+    max-height:510px;
+    overflow-y: auto;
+}
+}

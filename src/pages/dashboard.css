@@ -1,0 +1,101 @@
+.dashboard body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f9;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .dashboard-container {
+    padding: 20px;
+  }
+  
+  .dashboard-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+  }
+  
+  .dashboard-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .wide {
+    grid-column: span 2;
+  }
+  
+  .percentage-text {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2D89EF;
+  }
+  
+  .positive-trend {
+    color: green;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+  
+  @media (max-width: 768px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+  
+    .wide {
+      grid-column: span 1;
+    }
+  }
+  
+  @media (max-width: 391px) {
+    /* Reduce padding for better mobile fit */
+    .dashboard-container {
+      padding: 10px;
+      max-height:670px;
+      overflow-y: auto; /* Enable vertical scrolling when content overflows */
+    }
+  
+    /* Adjust title size */
+    .dashboard-title {
+      font-size: 20px;
+      text-align: center; /* Center-align for better appearance */
+      margin-bottom: 15px;
+    }
+  
+    /* Grid Layout - Ensure Cards Fit */
+    .dashboard-grid {
+      grid-template-columns: 1fr; /* Single column for small screens */
+      gap: 15px; /* Reduce gap */
+    }
+  
+    /* Make sure wide cards also fit in one column */
+    .wide {
+      grid-column: span 1;
+    }
+  
+    /* Adjust card styling */
+    .dashboard-card {
+      padding: 15px;
+      font-size: 14px; /* Adjust text size for readability */
+    }
+  
+    /* Adjust percentage text size */
+    .percentage-text {
+      font-size: 20px;
+    }
+  
+    /* Reduce margin on positive trend text */
+    .positive-trend {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+  }
+  
