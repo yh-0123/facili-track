@@ -5,6 +5,8 @@ import "./facilityAssets.css";
 import "../index.css";
 import PageHeader from "../pageHeader";
 import supabase from "../../backend/DBClient/SupaBaseClient";
+import Cookies from "js-cookie";
+import userRolesEnum from "../userManagement/userRolesEnum";
 
 const FacilityAssets = () => {
   const [assets, setAssets] = useState([]);
@@ -17,6 +19,24 @@ const FacilityAssets = () => {
   const [categories, setCategories] = useState([]);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+
+  // Fetch user role from cookies
+  useEffect(() => {
+    const userData = Cookies.get("userData");
+    if (userData) {
+      try {
+        const userInfo = JSON.parse(userData);
+        setUserRole(userInfo.userRole);
+      } catch (parseError) {
+        console.error("Error parsing userData:", parseError);
+        setUserRole(null);
+      }
+    }
+  }, []);
+
+  // Check if user can add new assets (only ADMIN can)
+  const canAddNewAsset = userRole === userRolesEnum.ADMIN;
 
   // Fetch all assets from the Supabase database
   useEffect(() => {
@@ -139,12 +159,16 @@ const FacilityAssets = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <button
-          className="add-asset-btn"
-          onClick={() => navigate("/add-asset")}
-        >
-          Add New Asset
-        </button>
+        
+        {/* Only show Add New Asset button for admins */}
+        {canAddNewAsset && (
+          <button
+            className="add-asset-btn"
+            onClick={() => navigate("/add-asset")}
+          >
+            Add New Asset
+          </button>
+        )}
       </div>
 
       <div className="filters-row">

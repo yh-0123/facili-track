@@ -18,7 +18,6 @@ import AssetDetails from "./pages/facilityAssets/assetDetails";
 import TicketDetails from "./pages/tickets/ticketDetails";
 import ResidentHome from "./pages/residentHome";
 import CreateTicket from "./pages/tickets/createTicket";
-import TicketHistory from "./pages/tickets/ticketHistory";
 import userRolesEnum from "./pages/userManagement/userRolesEnum";
 import Cookies from "js-cookie";
 
@@ -173,7 +172,7 @@ function App() {
               element={<UserLogin setIsLoggedIn={updateLoginState} />}
             />
             <Route path="/create-ticket" element={<CreateTicket />} />
-            <Route path="/ticket-history" element={<TicketHistory />} />
+            
           </Routes>
         </div>
       </div>

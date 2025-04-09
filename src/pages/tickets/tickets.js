@@ -37,43 +37,49 @@ const Tickets = () => {
       try {
         let userInfo;
         const userData = Cookies.get("userData");
-        
+    
         if (!userData) {
           console.error("No user data found");
-          navigate("/login"); // Redirect to login if no user data
+          navigate("/login");
           return;
         }
-        
+    
         userInfo = JSON.parse(userData);
-        
-        setUserRole(userInfo.userRole); // Set user role from cookie
-        setUserId(userInfo.userId); // Set user ID from cookie
-        setFilters(getFilters(userInfo.userRole)); // Set filters based on role
-        
-        // Set default active filter based on role
+        console.log("User info:", userInfo); // Debug user info
+    
+        setUserRole(userInfo.userRole);
+        setUserId(userInfo.userId);
+        setFilters(getFilters(userInfo.userRole));
+    
         if (userInfo.userRole === userRolesEnum.RESIDENT) {
           setActiveFilter("Open");
         }
-        
-        let query = supabase.from("ticket").select("*, users(userName)");
-        
-        // Apply role-based filters for the database query
+    
+        // Fixed query structure for Supabase
+        let query = supabase.from("ticket").select("*");
+    
+        // Apply role-based filters
         if (userInfo.userRole === userRolesEnum.ADMIN) {
-          // Admin can see all tickets, no additional filtering needed
+          // Admin sees all tickets
+          console.log("Admin query - no filters");
         } else if (userInfo.userRole === userRolesEnum.FACILITY_WORKER) {
-          // Facility worker can only see tickets assigned to them
+          // Facility worker sees assigned tickets
           query = query.eq("assignedWorkerId", userInfo.userId);
+          console.log("Worker query - filtered by assignedWorkerId:", userInfo.userId);
         } else if (userInfo.userRole === userRolesEnum.RESIDENT) {
-          // Resident can only see tickets they submitted
+          // Resident sees their tickets
           query = query.eq("reportedResidentId", userInfo.userId);
+          console.log("Resident query - filtered by reportedResidentId:", userInfo.userId);
         }
-        
+    
         const { data, error } = await query;
-        
+    
         if (error) {
           console.error("Error fetching tickets:", error.message);
         } else {
-          setTickets(data || []); // Set the fetched tickets
+          console.log("Fetched tickets count:", data?.length);
+          console.log("First ticket sample:", data?.[0]);
+          setTickets(data || []);
         }
       } catch (error) {
         console.error("Unexpected error:", error);
@@ -245,18 +251,12 @@ const Tickets = () => {
           </div>
 
           {/* Conditionally render the "Create Ticket" button based on the user's role */}
-          {userRole === userRolesEnum.ADMIN && (
+          {userRole !== userRolesEnum.FACILITY_WORKER && (
             <Link to="/create-ticket" className="create-ticket-button">
               Create Ticket
             </Link>
           )}
           
-          {/* Allow residents to create tickets too */}
-          {userRole === userRolesEnum.RESIDENT && (
-            <Link to="/create-ticket" className="create-ticket-button">
-              Submit Ticket
-            </Link>
-          )}
         </div>
 
         <div className="tickets-list">

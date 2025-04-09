@@ -207,6 +207,9 @@
   cursor: not-allowed;
 }
 
+
+
+
 @media (max-width: 414px) {
   .ticket-details-page{
     padding-left:0px;
