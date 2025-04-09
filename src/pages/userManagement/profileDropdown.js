@@ -71,23 +71,41 @@ const ProfileDropdown = ({ updateLoginState }) => {
     }
   };
 
-  const handleNotificationClick = async () => {
-    setIsNotificationOpen(!isNotificationOpen);
+  // Expand the notification fetching to include ticket information
+const handleNotificationClick = async () => {
+  setIsNotificationOpen(!isNotificationOpen);
 
-    if (!isNotificationOpen && userId) {
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("recipient_id", userId)
-        .order("created_at", { ascending: false });
+  if (!isNotificationOpen && userId) {
+    // Fetch notifications with joined ticket information if available
+    const { data, error } = await supabase
+      .from("notifications")
+      .select(`
+        notificationId,
+        notificationMessage,
+        createdAt,
+        isRead,
+        ticketId,
+        tickets:ticketId (ticketId, ticketTitle)
+      `)
+      .eq("recipientId", userId)
+      .order("createdAt", { ascending: false });
 
-      if (error) {
-        console.error("Failed to fetch notifications", error);
-      } else {
-        setNotifications(data);
+    if (error) {
+      console.error("Failed to fetch notifications", error);
+    } else {
+      setNotifications(data);
+      
+      // Mark notifications as read
+      const unreadNotifications = data.filter(n => !n.isRead).map(n => n.id);
+      if (unreadNotifications.length > 0) {
+        await supabase
+          .from("notifications")
+          .update({ isRead: true })
+          .in("id", unreadNotifications);
       }
     }
-  };
+  }
+};
 
   // Close dropdown if clicked outside (handles both profile and notification dropdowns)
   useEffect(() => {
@@ -148,11 +166,19 @@ const ProfileDropdown = ({ updateLoginState }) => {
           ) : (
             <ul>
               {notifications.map((notification) => (
-                <li key={notification.id} className="notification-item">
-                  <p>{notification.message}</p>{" "}
-                  {/* Display the notification message */}
-                  <small>{notification.created_at}</small>{" "}
-                  {/* Display the timestamp */}
+                <li 
+                  key={notification.id} 
+                  className={`notification-item ${notification.isRead ? "" : "unread"}`}
+                  onClick={() => {
+                    // If notification has a ticket, navigate to that ticket's detail page
+                    if (notification.ticketId) {
+                      navigate(`/ticket/${notification.ticketId}`);
+                      setIsNotificationOpen(false);
+                    }
+                  }}
+                >
+                  <p>{notification.message}</p>
+                  <small>{new Date(notification.createdAt).toLocaleString()}</small>
                 </li>
               ))}
             </ul>

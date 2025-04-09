@@ -40,6 +40,8 @@
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   font-family: Arial, sans-serif;
+  max-height: 700px;
+  overflow-y: auto;
 }
 
 .ticket-form label {
@@ -215,6 +217,33 @@
 
 .submit1-button:hover {
   background-color: #d48568;
+}
+
+/* Add this to your createTicket.css file */
+.location-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.current-location-button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.current-location-button:hover {
+  background-color: #45a049;
+}
+
+.current-location-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 /* Responsive Design for iPhone 13 */

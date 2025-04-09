@@ -1,15 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FaUpload, FaMapMarkerAlt, FaTimes } from "react-icons/fa";
+import {
+  FaUpload,
+  FaMapMarkerAlt,
+  FaTimes,
+  FaLocationArrow,
+} from "react-icons/fa";
 import PageHeader from "../pageHeader";
 import "./createTicket.css";
 import supabase from "../../backend/DBClient/SupaBaseClient";
 import Cookies from "js-cookie";
 import TicketStatusEnum from "./ticketStatusEnum";
-import { sendNotification } from "./notification";
+import { sendNotification, getAdminUserIds } from "./notificationService";
+import userRolesEnum from "../userManagement/userRolesEnum";
 
-// Import Google Maps components (you'll need to install @react-google-maps/api)
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+// Import Google Maps components
+import { GoogleMap, Marker } from "@react-google-maps/api";
 
 const CreateTicket = () => {
   const navigate = useNavigate();
@@ -20,6 +26,7 @@ const CreateTicket = () => {
   const [attachments, setAttachments] = useState([]);
   const [mapVisible, setMapVisible] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 1.3521, lng: 103.8198 }); // Default to Singapore
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const user = JSON.parse(Cookies.get("userData"));
   const fileInputRef = useRef(null);
 
@@ -31,12 +38,46 @@ const CreateTicket = () => {
     width: "100%",
     height: "300px",
     marginBottom: "20px",
-    borderRadius: "5px"
+    borderRadius: "5px",
+  };
+
+  // Get current user location
+  const getCurrentLocation = () => {
+    setIsGettingLocation(true);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          setLocationCoords({ lat, lng });
+          setMapCenter({ lat, lng });
+
+          // Update location text with a friendly name instead of coordinates
+          setLocationText("My Current Location");
+
+          setMapVisible(true); // Show map after getting location
+          setIsGettingLocation(false);
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          alert(
+            "Unable to get your current location. Please enable location services or select location on map."
+          );
+          setIsGettingLocation(false);
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+      setIsGettingLocation(false);
+    }
   };
 
   const handleFileUpload = (event) => {
     const selectedFiles = Array.from(event.target.files);
-    
+
     // Check if adding these files would exceed the limit
     if (attachments.length + selectedFiles.length > MAX_FILES) {
       alert(`You can only upload up to ${MAX_FILES} files.`);
@@ -44,15 +85,21 @@ const CreateTicket = () => {
     }
 
     // Check file sizes
-    const oversizedFiles = selectedFiles.filter(file => file.size > MAX_FILE_SIZE);
+    const oversizedFiles = selectedFiles.filter(
+      (file) => file.size > MAX_FILE_SIZE
+    );
     if (oversizedFiles.length > 0) {
-      alert(`Some files exceed the 5MB size limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      alert(
+        `Some files exceed the 5MB size limit: ${oversizedFiles
+          .map((f) => f.name)
+          .join(", ")}`
+      );
       return;
     }
 
     // Add new files to the existing attachments
     setAttachments([...attachments, ...selectedFiles]);
-    
+
     // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -73,19 +120,18 @@ const CreateTicket = () => {
     const lat = event.latLng.lat();
     const lng = event.latLng.lng();
     setLocationCoords({ lat, lng });
-    
-    // Update the location text field with coordinates
-    const coordsString = `Latitude: ${lat.toFixed(6)}, Longitude: ${lng.toFixed(6)}`;
-    setLocationText(locationText ? `${locationText} (${coordsString})` : coordsString);
+
+    // Update the location text field with a simple label
+    setLocationText("Selected Location on Map");
+  };
+
+  const clearLocation = () => {
+    setLocationCoords(null);
+    setLocationText("");
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
-    if (attachments.length > MAX_FILES) {
-      alert(`You can only upload up to ${MAX_FILES} files.`);
-      return;
-    }
 
     try {
       // Prepare the ticket data
@@ -101,28 +147,55 @@ const CreateTicket = () => {
       // Array to store attachment URLs
       const attachmentUrls = [];
 
-      // Upload each attachment to Supabase Storage
+      // Upload each attachment to Supabase Storage (if any)
       if (attachments.length > 0) {
         for (const file of attachments) {
-          // Create a unique file path
-          const filePath = `tickets/${user.userId}/${Date.now()}_${file.name}`;
-          
-          // Upload the file
-          const { data: fileData, error: uploadError } = await supabase.storage
-            .from("ticket-attachments")
-            .upload(filePath, file);
+          try {
+            // Clean filename to avoid path issues
+            const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+            const filePath = `tickets/${
+              user.userId
+            }/${Date.now()}_${safeFileName}`;
 
-          if (uploadError) {
-            throw new Error(`Error uploading ${file.name}: ${uploadError.message}`);
-          }
+            console.log(
+              "Attempting to upload file:",
+              safeFileName,
+              "to path:",
+              filePath
+            );
 
-          // Get the public URL
-          const { data: urlData } = supabase.storage
-            .from("ticket-attachments")
-            .getPublicUrl(filePath);
+            // Upload with explicit options
+            const { data: fileData, error: uploadError } =
+              await supabase.storage
+                .from("ticket-attachments")
+                .upload(filePath, file, {
+                  cacheControl: "3600",
+                  upsert: true,
+                });
 
-          if (urlData && urlData.publicUrl) {
-            attachmentUrls.push(urlData.publicUrl);
+            if (uploadError) {
+              console.error("Upload error details:", uploadError);
+              throw new Error(
+                `Error uploading ${file.name}: ${uploadError.message}`
+              );
+            }
+
+            console.log("File uploaded successfully:", fileData);
+
+            // Get the public URL
+            const { data: urlData } = supabase.storage
+              .from("ticket-attachments")
+              .getPublicUrl(filePath);
+
+            if (urlData && urlData.publicUrl) {
+              attachmentUrls.push(urlData.publicUrl);
+              console.log("Got public URL:", urlData.publicUrl);
+            } else {
+              console.warn("Could not get public URL for file:", filePath);
+            }
+          } catch (error) {
+            console.error("File upload error:", error);
+            alert(`Error uploading file ${file.name}: ${error.message}`);
           }
         }
       }
@@ -132,40 +205,41 @@ const CreateTicket = () => {
         .from("ticket")
         .insert({
           reportedResidentId: user.userId,
-          adminId: user.userId,
           ticketDescription: ticketData.description,
-          ticketAttachment: attachmentUrls.length > 0 ? JSON.stringify(attachmentUrls) : null,
+          ticketAttachment: attachmentUrls.length > 0 ? attachmentUrls : null,
           submissionDate: ticketData.submissionDate,
           ticketStatus: TicketStatusEnum.NOT_ASSIGNED,
           ticketTitle: title,
-          ticketLocation: locationText,
-          locationCoordinates: locationCoords ? JSON.stringify(locationCoords) : null,
-        });
+          ticketLocation: locationText || null,
+          locationCoordinates: locationCoords
+            ? JSON.stringify(locationCoords)
+            : null,
+        })
+        .select();
 
       if (error) {
         throw new Error(error.message);
       }
 
-      // Notify admins about the new ticket
-      const { data: adminUsers, error: adminError } = await supabase
-        .from("users")
-        .select("userId")
-        .eq("userRole", "0");
+      const ticketId = data[0]?.ticketId; // Assuming Supabase returns the inserted record
 
-      if (adminError) {
-        console.error("Error fetching admins:", adminError.message);
-      } else {
-        const adminIds = adminUsers.map((admin) => admin.userId);
-        await sendNotification(
-          adminIds,
-          `A new ticket has been submitted by ${user.userName}.`
-        );
+      // Notify admins about the new ticket
+      try {
+        const adminIds = await getAdminUserIds();
+        if (adminIds && adminIds.length > 0) {
+          await sendNotification(
+            adminIds,
+            `New ticket "${title}" submitted by ${user.userName}`,
+            ticketId
+          );
+        }
+      } catch (notificationError) {
+        console.error("Error sending notifications:", notificationError);
       }
 
       // If successful, navigate back or show a success message
       alert("Ticket submitted successfully!");
       navigate(-1); // Navigate back to the previous page
-
     } catch (error) {
       console.error("Error submitting ticket:", error);
       alert("Error submitting ticket: " + error.message);
@@ -200,44 +274,61 @@ const CreateTicket = () => {
           required
         ></textarea>
 
-        <label>Location of Defect</label>
+        <label>Geolocation of Defect (Optional)</label>
         <div className="location-input">
           <input
             type="text"
-            placeholder="Location details or pin on map"
+            placeholder="Location details (will be filled automatically when you select on map)"
             value={locationText}
             onChange={(e) => setLocationText(e.target.value)}
-            required
           />
-          <button 
-            type="button" 
-            className="map-toggle-button"
-            onClick={toggleMap}
-          >
-            <FaMapMarkerAlt /> {mapVisible ? 'Hide Map' : 'Show Map'}
-          </button>
+          <div className="location-buttons">
+            <button
+              type="button"
+              className="map-toggle-button"
+              onClick={toggleMap}
+            >
+              <FaMapMarkerAlt /> {mapVisible ? "Hide Map" : "Show Map"}
+            </button>
+            <button
+              type="button"
+              className="current-location-button"
+              onClick={getCurrentLocation}
+              disabled={isGettingLocation}
+            >
+              <FaLocationArrow />{" "}
+              {isGettingLocation ? "Getting Location..." : "Use My Location"}
+            </button>
+            {locationCoords && (
+              <button
+                type="button"
+                className="clear-location-button"
+                onClick={clearLocation}
+              >
+                <FaTimes /> Clear Location
+              </button>
+            )}
+          </div>
         </div>
 
         {mapVisible && (
-          <LoadScript googleMapsApiKey="YOUR_GOOGLE_MAPS_API_KEY">
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={mapCenter}
-              zoom={15}
-              onClick={handleMapClick}
-            >
-              {locationCoords && <Marker position={locationCoords} />}
-            </GoogleMap>
-          </LoadScript>
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={mapCenter}
+            zoom={15}
+            onClick={handleMapClick}
+          >
+            {locationCoords && <Marker position={locationCoords} />}
+          </GoogleMap>
         )}
 
-        <label>Attachments (Up to 3 files, max 5MB each)</label>
+        <label>Attachments (Optional, up to 3 files, max 5MB each)</label>
         <div className="file-upload">
-          <input 
-            type="file" 
-            id="file" 
+          <input
+            type="file"
+            id="file"
             ref={fileInputRef}
-            onChange={handleFileUpload} 
+            onChange={handleFileUpload}
             multiple
             disabled={attachments.length >= MAX_FILES}
           />
@@ -252,9 +343,9 @@ const CreateTicket = () => {
               {attachments.map((file, index) => (
                 <li key={index}>
                   {file.name} ({(file.size / 1048576).toFixed(2)} MB)
-                  <button 
-                    type="button" 
-                    className="remove-file-btn" 
+                  <button
+                    type="button"
+                    className="remove-file-btn"
                     onClick={() => removeAttachment(index)}
                   >
                     <FaTimes />
@@ -266,7 +357,11 @@ const CreateTicket = () => {
         )}
 
         <div className="button-group">
-          <button type="button" className="back-button" onClick={() => navigate(-1)}>
+          <button
+            type="button"
+            className="back-button"
+            onClick={() => navigate(-1)}
+          >
             Back
           </button>
 

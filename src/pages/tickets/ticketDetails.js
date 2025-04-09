@@ -5,6 +5,8 @@ import TicketStatusEnum from "./ticketStatusEnum";
 import PageHeader from "../pageHeader";
 import userRolesEnum from "../userManagement/userRolesEnum";
 import Cookies from "js-cookie";
+import { sendNotification, notifyTicketUpdate } from "./notificationService";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 import "./ticketDetails.css";
 
 const TicketDetails = () => {
@@ -24,6 +26,74 @@ const TicketDetails = () => {
   const [authorized, setAuthorized] = useState(false);
   const [ticketNotes, setTicketNotes] = useState([]);
   const [updatedBy, setUpdatedBy] = useState(ticket?.updatedBy || "N/A");
+  const [mapCenter, setMapCenter] = useState(null);
+
+  // Map container style
+  const mapContainerStyle = {
+    width: "100%",
+    height: "300px",
+    borderRadius: "8px",
+    marginTop: "10px",
+  };
+
+  // Parse location coordinates from ticket location
+  useEffect(() => {
+    if (ticket?.locationCoordinates) {
+      try {
+        // Check if the location is stored as a string with lat,lng format
+        if (typeof ticket.locationCoordinates === "string") {
+          // Check if it's a lat,lng coordinate pair
+          if (
+            ticket.locationCoordinates.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/)
+          ) {
+            const [lat, lng] = ticket.locationCoordinates
+              .split(",")
+              .map((coord) => parseFloat(coord.trim()));
+            if (!isNaN(lat) && !isNaN(lng)) {
+              setMapCenter({ lat, lng });
+            }
+          }
+          // If it might be JSON, try to parse it
+          else if (
+            ticket.locationCoordinates.startsWith("{") ||
+            ticket.locationCoordinates.startsWith("[")
+          ) {
+            try {
+              const locationObj = JSON.parse(ticket.locationCoordinates);
+              if (locationObj.lat && locationObj.lng) {
+                setMapCenter({
+                  lat: parseFloat(locationObj.lat),
+                  lng: parseFloat(locationObj.lng),
+                });
+              }
+            } catch (jsonError) {
+              // If it's not valid JSON, just treat it as a text location
+              console.log("Location is a text address:", ticket.ticketLocation);
+              // Don't set mapCenter for text addresses
+            }
+          }
+          // Otherwise it's just a text address like "My Current Location"
+          else {
+            console.log("Location is a text address:", ticket.ticketLocation);
+            // We don't set mapCenter for text addresses
+          }
+        }
+        // Check if location is stored as an object
+        else if (
+          typeof ticket.locationCoordinates === "object" &&
+          ticket.locationCoordinates.lat &&
+          ticket.locationCoordinates.lng
+        ) {
+          setMapCenter({
+            lat: parseFloat(ticket.locationCoordinates.lat),
+            lng: parseFloat(ticket.locationCoordinates.lng),
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing location data:", error);
+      }
+    }
+  }, [ticket?.locationCoordinates]);
 
   // Helper function to sort notes chronologically
   const sortNotesByTimestamp = (notes) => {
@@ -317,6 +387,20 @@ const TicketDetails = () => {
 
     setUpdatedBy(currentUser.userName);
 
+    if (!error) {
+      // Notify the assigned worker
+      await sendNotification(
+        selectedWorker.userId,
+        `You have been assigned to ticket #${ticket.ticketId}: ${ticket.ticketTitle}`,
+        ticket.ticketId
+      );
+      await sendNotification(
+        ticket.reportedResidentId,
+        `Your ticket #${ticket.ticketId} has been assigned to ${selectedWorker.userName}`,
+        ticket.ticketId
+      );
+    }
+
     if (error) {
       console.error("Error assigning ticket:", error);
       // Rollback UI if there's an error
@@ -365,6 +449,15 @@ const TicketDetails = () => {
     if (error) {
       console.error("Error resolving ticket:", error);
       alert("Failed to resolve ticket. Please try again.");
+    }
+
+    if (!error) {
+      // Notify all involved parties about the resolution
+      await notifyTicketUpdate(
+        ticket.ticketId,
+        `Ticket #${ticket.ticketId}: ${ticket.ticketTitle} has been marked as resolved`,
+        currentUser.userId // Don't notify the person who resolved it
+      );
     }
   };
 
@@ -431,6 +524,18 @@ const TicketDetails = () => {
         return;
       }
 
+      if (!updateError) {
+        // Notify all involved parties about the new note
+        await notifyTicketUpdate(
+          ticket.ticketId,
+          `New note added to ticket #${ticket.ticketId}: ${noteText.substring(
+            0,
+            30
+          )}${noteText.length > 30 ? "..." : ""}`,
+          currentUser.userId // Don't notify the person who added the note
+        );
+      }
+
       // Update UI state
       setTicketNotes(updatedNotes);
       setNoteText("");
@@ -465,6 +570,36 @@ const TicketDetails = () => {
       return true;
 
     return false;
+  };
+
+  // Display the location as an address or coordinates
+  const displayLocation = () => {
+    if (!ticket?.ticketLocation) return "N/A";
+
+    // If it's a simple string that isn't in coordinate format
+    if (
+      typeof ticket.ticketLocation === "string" &&
+      !ticket.ticketLocation.match(/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/) &&
+      !ticket.ticketLocation.startsWith("{") &&
+      !ticket.ticketLocation.startsWith("[")
+    ) {
+      return ticket.ticketLocation;
+    }
+
+    // If we have parsed coordinates for the map
+    if (mapCenter) {
+      return `${mapCenter.lat.toFixed(6)}, ${mapCenter.lng.toFixed(6)}`;
+    }
+
+    // Return the raw location string as fallback
+    return String(ticket.ticketLocation);
+  };
+
+  const handleGetDirections = () => {
+    if (mapCenter) {
+      const url = `https://www.google.com/maps/dir/?api=1&destination=${mapCenter.lat},${mapCenter.lng}`;
+      window.open(url, "_blank");
+    }
   };
 
   if (loading) {
@@ -533,8 +668,35 @@ const TicketDetails = () => {
               <strong>Description:</strong> <h5>{ticket.ticketDescription}</h5>
             </p>
             <p>
-              <strong>Location:</strong> <h5>{ticket.ticketLocation}</h5>
+              <strong>Location:</strong> <h5>{displayLocation()}</h5>
             </p>
+            {/* Google Map Display */}
+            {mapCenter && (
+              <div className="location-map">
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={mapCenter}
+                  zoom={15}
+                >
+                  <Marker position={mapCenter} />
+                </GoogleMap>
+                <button
+                  className="get-directions-btn"
+                  onClick={handleGetDirections}
+                  style={{
+                    marginTop: "10px",
+                    padding: "8px 16px",
+                    backgroundColor: "#4285f4",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Get Directions
+                </button>
+              </div>
+            )}
             <p>
               <strong>Assigned To:</strong> <h5>{assignedWorkerName}</h5>
             </p>

@@ -68,7 +68,7 @@ color: white;
 
 .tickets-list {
 margin-top: 20px;
-max-height: 550px; /* Adjust height as needed */
+max-height: 580px; /* Adjust height as needed */
 overflow-y: auto;
 padding-right: 10px; /* Prevents content from being hidden under scrollbar */
 }

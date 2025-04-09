@@ -135,7 +135,19 @@
 .notification-item {
   padding: 8px 0;
   border-bottom: 1px solid #ddd;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
+
+.notification-item:hover {
+  background-color: #f5f5f5;
+}
+
+.notification-item.unread {
+  background-color: #e6f7ff;
+  font-weight: 500;
+}
+
 
 .notification-item p {
   margin: 0;
@@ -145,6 +157,8 @@
   color: #888;
   font-size: 12px;
 }
+
+
 
 @media (max-width: 391px) {
   /* Profile Container - Align Items */

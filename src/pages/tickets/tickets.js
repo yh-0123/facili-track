@@ -210,7 +210,14 @@ const Tickets = () => {
   return (
     <div className="tickets-page">
       <div className="content">
-        <PageHeader title="Tickets" />
+          {userRole === userRolesEnum.RESIDENT && (
+            <PageHeader title="Ticket History" />
+          )}
+
+          {userRole !== userRolesEnum.RESIDENT && (
+            <PageHeader title="Tickets" />
+          )}
+        
 
         <div className="search-bar">
           <FaSearch style={{ marginTop: "10px" }} />
@@ -251,7 +258,7 @@ const Tickets = () => {
           </div>
 
           {/* Conditionally render the "Create Ticket" button based on the user's role */}
-          {userRole !== userRolesEnum.FACILITY_WORKER && (
+          {userRole === userRolesEnum.ADMIN && (
             <Link to="/create-ticket" className="create-ticket-button">
               Create Ticket
             </Link>

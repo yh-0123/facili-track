@@ -36,6 +36,8 @@
   display: flex;
   justify-content: space-between;
   gap: 20px;
+  max-height: 540px;
+  overflow-y: auto;
 }
 
 .ticket-info {
@@ -76,6 +78,8 @@
 .ticket-updates {
   flex: 1;
   margin: 15px;
+  max-height: 480px;
+  overflow-y: auto;
 }
 
 .ticket-updates p {
@@ -121,12 +125,13 @@
 .attachment-box {
   width: 100%;
   height: 100px;
-  background: #ddd;
+  background: #f7f7f7;
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
+  padding:10px 0px;
 }
 
 .attachment-box img {
@@ -207,7 +212,12 @@
   cursor: not-allowed;
 }
 
-
+.location-map {
+  margin: 10px 0 20px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
 
 
 @media (max-width: 414px) {
@@ -233,14 +243,30 @@
     margin-bottom:20px;
   }
 
+  .ticket-info{
+    margin-bottom:0;
+
+  }
+
+  .ticket-updates{
+    margin-top:0;
+    max-height: fit-content;
+    overflow-y:unset;
+  }
+
   .ticket-content {
     display: flex;
-    height: 480px;
-    justify-content: space-between;
-    gap: 20px;
+    max-height: 550px;
+    overflow-y: auto;
+    flex-direction: column;
+    gap: 0;
   }
 
   .ticket-details-page .back-btn{
+    margin-left: 20px;
+  }
+
+  .ticket-details-page .page-title{
     margin-left: 20px;
   }
 }

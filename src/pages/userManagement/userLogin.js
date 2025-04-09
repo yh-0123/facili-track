@@ -22,14 +22,7 @@ const UserLogin = ({ setIsLoggedIn }) => {
     };
   }, []);
 
-  useEffect(() => {
-    // Check if user cookie exists
-    const userData = Cookies.get("userData");
-    if (userData) {
-      setIsLoggedIn(true);
-      navigate("/dashboard");
-    }
-  }, [navigate, setIsLoggedIn]); // Add dependencies
+ 
 
   // Function to verify the password hash
   const verifyPassword = async (plainPassword, hashedPassword) => {
