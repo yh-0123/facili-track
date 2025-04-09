@@ -23,11 +23,12 @@ const TicketDetails = () => {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [ticketNotes, setTicketNotes] = useState([]);
+  const [updatedBy, setUpdatedBy] = useState(ticket?.updatedBy || "N/A");
 
   // Helper function to sort notes chronologically
   const sortNotesByTimestamp = (notes) => {
-    return [...notes].sort((a, b) => 
-      new Date(a.timestamp) - new Date(b.timestamp)
+    return [...notes].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
     );
   };
 
@@ -84,35 +85,38 @@ const TicketDetails = () => {
     const initializeComponent = async () => {
       setLoading(true);
       const user = getCurrentUser();
-      
+
       if (!ticket) {
         setLoading(false);
         return;
       }
-      
+
       // If we need to fetch the complete ticket data from the database
       let ticketData = ticket;
-      if (ticket.ticketId && (!ticket.reportedResidentId || !ticket.assignedWorkerId)) {
+      if (
+        ticket.ticketId &&
+        (!ticket.reportedResidentId || !ticket.assignedWorkerId)
+      ) {
         const { data, error } = await supabase
           .from("ticket")
           .select("*")
           .eq("ticketId", ticket.ticketId)
           .single();
-          
+
         if (!error) {
           ticketData = data;
         }
       }
-      
+
       const isAuthorized = await checkAuthorization(user, ticketData);
-      
+
       if (!isAuthorized) {
         // Redirect unauthorized users
         alert("You are not authorized to view this ticket");
         navigate("/tickets");
         return;
       }
-      
+
       setLoading(false);
     };
 
@@ -168,7 +172,7 @@ const TicketDetails = () => {
   // Fetch facility workers
   useEffect(() => {
     if (!authorized || currentUser?.userRole !== userRolesEnum.ADMIN) return;
-    
+
     const fetchWorkers = async () => {
       const { data, error } = await supabase
         .from("users")
@@ -188,7 +192,7 @@ const TicketDetails = () => {
   useEffect(() => {
     const fetchTicketNotes = async () => {
       if (!ticket?.ticketId) return;
-      
+
       try {
         // First check if updateNotes exists in the ticket table
         const { data: ticketData, error: ticketError } = await supabase
@@ -196,38 +200,76 @@ const TicketDetails = () => {
           .select("updateNotes")
           .eq("ticketId", ticket.ticketId)
           .single();
-        
+
         if (ticketError) {
           console.error("Error fetching ticket notes:", ticketError);
           return;
         }
-        
-        // If updateNotes exists and is not null/empty, parse it
+
+        // If updateNotes exists, process it properly
         if (ticketData?.updateNotes) {
-          try {
-            const parsedNotes = JSON.parse(ticketData.updateNotes);
-            if (Array.isArray(parsedNotes)) {
-              setTicketNotes(sortNotesByTimestamp(parsedNotes));
+          // Handle string-based notes (properly JSON-encoded)
+          if (typeof ticketData.updateNotes === "string") {
+            try {
+              // Try to parse as JSON
+              const parsedNotes = JSON.parse(ticketData.updateNotes);
+
+              // If it's an array, use it directly
+              if (Array.isArray(parsedNotes)) {
+                setTicketNotes(sortNotesByTimestamp(parsedNotes));
+              }
+              // If it parsed as an object but not an array, wrap it
+              else if (typeof parsedNotes === "object") {
+                setTicketNotes(sortNotesByTimestamp([parsedNotes]));
+              }
+              // If it's neither array nor object, create a basic note
+              else {
+                setTicketNotes([
+                  {
+                    note: String(ticketData.updateNotes),
+                    addedBy: ticket.updatedBy || "Unknown",
+                    timestamp:
+                      ticket.resolutionDate || new Date().toISOString(),
+                  },
+                ]);
+              }
+            } catch (parseError) {
+              // Handle invalid JSON by creating a fallback note
+              console.warn("Could not parse updateNotes as JSON:", parseError);
+              setTicketNotes([
+                {
+                  note: String(ticketData.updateNotes),
+                  addedBy: ticket.updatedBy || "Unknown",
+                  timestamp: ticket.resolutionDate || new Date().toISOString(),
+                },
+              ]);
+            }
+          }
+          // Handle object-based notes (stored directly as object/array in database)
+          else if (typeof ticketData.updateNotes === "object") {
+            if (Array.isArray(ticketData.updateNotes)) {
+              setTicketNotes(sortNotesByTimestamp(ticketData.updateNotes));
             } else {
-              // If it's not an array but has content, convert to the new format
-              setTicketNotes([{
+              setTicketNotes(sortNotesByTimestamp([ticketData.updateNotes]));
+            }
+          }
+          // Fallback for any other unexpected format
+          else {
+            setTicketNotes([
+              {
                 note: String(ticketData.updateNotes),
                 addedBy: ticket.updatedBy || "Unknown",
-                timestamp: ticket.resolutionDate || new Date().toISOString()
-              }]);
-            }
-          } catch (parseError) {
-            console.warn("Could not parse updateNotes as JSON:", parseError);
-            // If it's not valid JSON, treat it as a single note in the old format
-            setTicketNotes([{
-              note: String(ticketData.updateNotes),
-              addedBy: ticket.updatedBy || "Unknown",
-              timestamp: ticket.resolutionDate || new Date().toISOString()
-            }]);
+                timestamp: ticket.resolutionDate || new Date().toISOString(),
+              },
+            ]);
           }
+        } else {
+          // No notes found
+          setTicketNotes([]);
         }
       } catch (error) {
         console.error("Error processing ticket notes:", error);
+        setTicketNotes([]);
       }
     };
 
@@ -239,39 +281,41 @@ const TicketDetails = () => {
   // Assign Ticket
   const handleAssignTicket = async () => {
     if (!ticket?.ticketId || !selectedWorker) return;
-    
+
     // Validate user data
     if (!currentUser?.userName) {
       console.error("Cannot assign ticket: User information missing");
       alert("You must be logged in to assign tickets");
       return;
     }
-    
+
     // Create a new note for this assignment
     const newNote = {
       note: `Ticket assigned to ${selectedWorker.userName}`,
       addedBy: currentUser.userName,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    
+
     // Combine existing notes with the new note
     const updatedNotes = sortNotesByTimestamp([...ticketNotes, newNote]);
-    
+
     // Optimistically update UI
     setShowModal(false);
     setTicketStatus(TicketStatusEnum.ASSIGNED);
     setTicketNotes(updatedNotes);
     setAssignedWorkerName(selectedWorker.userName);
-    
+
     const { data, error } = await supabase
       .from("ticket")
       .update({
         assignedWorkerId: selectedWorker.userId,
         ticketStatus: TicketStatusEnum.ASSIGNED,
         updateNotes: JSON.stringify(updatedNotes),
-        updatedBy: currentUser.userName
+        updatedBy: currentUser.userName,
       })
       .eq("ticketId", ticket.ticketId);
+
+    setUpdatedBy(currentUser.userName);
 
     if (error) {
       console.error("Error assigning ticket:", error);
@@ -283,7 +327,7 @@ const TicketDetails = () => {
   // Handle resolve ticket status update
   const handleResolveTicket = async () => {
     if (!ticket?.ticketId) return;
-    
+
     // Validate user data
     if (!currentUser?.userName) {
       console.error("Cannot resolve ticket: User information missing");
@@ -295,24 +339,26 @@ const TicketDetails = () => {
     const newNote = {
       note: "Ticket marked as resolved",
       addedBy: currentUser.userName,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-    
+
     // Combine existing notes with the new note
     const updatedNotes = sortNotesByTimestamp([...ticketNotes, newNote]);
-    
+
     // Optimistically update UI
     setTicketStatus(TicketStatusEnum.RESOLVED);
     setTicketNotes(updatedNotes);
 
+    setUpdatedBy(currentUser.userName);
+
     // Update the ticket status in the database
     const { data, error } = await supabase
       .from("ticket")
-      .update({ 
+      .update({
         ticketStatus: TicketStatusEnum.RESOLVED,
         updatedBy: currentUser.userName,
         resolutionDate: new Date().toISOString(),
-        updateNotes: JSON.stringify(updatedNotes)
+        updateNotes: JSON.stringify(updatedNotes),
       })
       .eq("ticketId", ticket.ticketId);
 
@@ -325,61 +371,99 @@ const TicketDetails = () => {
   // Handle adding notes
   const handleAddNote = async () => {
     if (!noteText.trim() || !ticket?.ticketId) return;
-    
-    // Validate user data
-    if (!currentUser?.userName) {
-      console.error("Cannot add note: User information missing");
-      alert("You must be logged in to add notes");
-      return;
-    }
-    
-    // Create the new note object
-    const newNote = {
-      note: noteText.trim(),
-      addedBy: currentUser.userName,
-      timestamp: new Date().toISOString()
-    };
-    
-    // Combine existing notes with the new note and sort chronologically
-    const updatedNotes = sortNotesByTimestamp([...ticketNotes, newNote]);
-    
-    // Optimistically update UI
-    setTicketNotes(updatedNotes);
-    setNoteText(""); 
-    setShowNotesModal(false);
-    
-    // Update the database
-    const { data, error } = await supabase
-      .from("ticket")
-      .update({
-        updateNotes: JSON.stringify(updatedNotes),
-        updatedBy: currentUser.userName
-      })
-      .eq("ticketId", ticket.ticketId);
-      
-    if (error) {
-      console.error("Error adding note:", error);
-      // Rollback UI if there's an error
-      setTicketNotes(ticketNotes);
-      alert("Failed to save your note. Please try again.");
+
+    try {
+      console.log("Adding note to ticket ID:", ticket.ticketId);
+
+      // Create the new note object
+      const newNote = {
+        note: noteText.trim(),
+        addedBy: currentUser?.userName || "System",
+        timestamp: new Date().toISOString(),
+      };
+
+      // Get existing notes
+      const { data: currentTicket, error: fetchError } = await supabase
+        .from("ticket")
+        .select("updateNotes, ticketId")
+        .eq("ticketId", ticket.ticketId)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching current ticket:", fetchError);
+        alert(`Could not fetch ticket data: ${fetchError.message}`);
+        return;
+      }
+
+      // Parse existing notes or initialize as empty array
+      let existingNotes = [];
+      if (currentTicket.updateNotes) {
+        try {
+          if (typeof currentTicket.updateNotes === "string") {
+            existingNotes = JSON.parse(currentTicket.updateNotes);
+            if (!Array.isArray(existingNotes)) {
+              existingNotes = [];
+            }
+          } else if (Array.isArray(currentTicket.updateNotes)) {
+            existingNotes = currentTicket.updateNotes;
+          }
+        } catch (parseError) {
+          console.warn("Could not parse updateNotes:", parseError);
+          existingNotes = [];
+        }
+      }
+
+      // Add new note to existing notes
+      const updatedNotes = [...existingNotes, newNote];
+
+      // Update with direct approach
+      const { error: updateError } = await supabase
+        .from("ticket")
+        .update({
+          updateNotes: JSON.stringify(updatedNotes),
+          updatedBy: currentUser?.userName || "System",
+        })
+        .eq("ticketId", ticket.ticketId);
+
+      if (updateError) {
+        console.error("Error updating ticket:", updateError);
+        alert(`Failed to save note: ${updateError.message}`);
+        return;
+      }
+
+      // Update UI state
+      setTicketNotes(updatedNotes);
+      setNoteText("");
+      setShowNotesModal(false);
+
+      setUpdatedBy(currentUser?.userName || "System");
+    } catch (e) {
+      console.error("Exception in handleAddNote:", e);
+      alert(`An error occurred: ${e.message}`);
     }
   };
 
   // Check if user can add notes
   const canAddNotes = () => {
     if (!currentUser || !ticket) return false;
-    
+
     // Admin can add notes to any ticket
     if (currentUser.userRole === userRolesEnum.ADMIN) return true;
-    
+
     // Facility worker can add notes if they're assigned to the ticket
-    if (currentUser.userRole === userRolesEnum.FACILITY_WORKER && 
-        ticket.assignedWorkerId === currentUser.userId) return true;
-    
+    if (
+      currentUser.userRole === userRolesEnum.FACILITY_WORKER &&
+      ticket.assignedWorkerId === currentUser.userId
+    )
+      return true;
+
     // Resident can add notes if they submitted the ticket
-    if (currentUser.userRole === userRolesEnum.RESIDENT && 
-        ticket.reportedResidentId === currentUser.userId) return true;
-    
+    if (
+      currentUser.userRole === userRolesEnum.RESIDENT &&
+      ticket.reportedResidentId === currentUser.userId
+    )
+      return true;
+
     return false;
   };
 
@@ -388,17 +472,22 @@ const TicketDetails = () => {
   }
 
   if (!ticket || !authorized) {
-    return <p>No ticket details available or you are not authorized to view this ticket.</p>;
+    return (
+      <p>
+        No ticket details available or you are not authorized to view this
+        ticket.
+      </p>
+    );
   }
 
-  const canAssignTicket = 
-    currentUser?.userRole === userRolesEnum.ADMIN && 
+  const canAssignTicket =
+    currentUser?.userRole === userRolesEnum.ADMIN &&
     ticketStatus !== TicketStatusEnum.RESOLVED;
-    
-  const canResolveTicket = 
-    (currentUser?.userRole === userRolesEnum.ADMIN || 
-     (currentUser?.userRole === userRolesEnum.FACILITY_WORKER && 
-      ticket.assignedWorkerId === currentUser?.userId)) && 
+
+  const canResolveTicket =
+    (currentUser?.userRole === userRolesEnum.ADMIN ||
+      (currentUser?.userRole === userRolesEnum.FACILITY_WORKER &&
+        ticket.assignedWorkerId === currentUser?.userId)) &&
     ticketStatus !== TicketStatusEnum.RESOLVED;
 
   // Format date for display
@@ -447,8 +536,7 @@ const TicketDetails = () => {
               <strong>Location:</strong> <h5>{ticket.ticketLocation}</h5>
             </p>
             <p>
-              <strong>Assigned To:</strong>{" "}
-              <h5>{assignedWorkerName}</h5>
+              <strong>Assigned To:</strong> <h5>{assignedWorkerName}</h5>
             </p>
             {ticket.resolutionDate && (
               <p>
@@ -477,9 +565,20 @@ const TicketDetails = () => {
               {ticketNotes.length > 0 ? (
                 ticketNotes.map((note, index) => (
                   <div key={index} className="note-item">
-                    <p className="note-text">{note.note}</p>
+                    <p className="note-text">
+                      {typeof note === "object" && note.note
+                        ? note.note
+                        : String(note)}
+                    </p>
                     <p className="note-meta">
-                      Added by {note.addedBy} on {formatDate(note.timestamp)}
+                      Added by{" "}
+                      {typeof note === "object" && note.addedBy
+                        ? note.addedBy
+                        : "Unknown"}{" "}
+                      on{" "}
+                      {typeof note === "object" && note.timestamp
+                        ? formatDate(note.timestamp)
+                        : "Unknown date"}
                     </p>
                   </div>
                 ))
@@ -487,15 +586,18 @@ const TicketDetails = () => {
                 <p className="update-note">No updates available</p>
               )}
             </div>
-            
+
             {canAddNotes() && (
-              <button className="add-notes-btn" onClick={() => setShowNotesModal(true)}>
+              <button
+                className="add-notes-btn"
+                onClick={() => setShowNotesModal(true)}
+              >
                 💬 Add Notes
               </button>
             )}
 
             <p>
-              <strong>Updated By:</strong> <h5>{ticket.updatedBy || "N/A"}</h5>
+              <strong>Latest Update By:</strong> <h5>{updatedBy || "N/A"}</h5>
             </p>
           </div>
         </div>
@@ -507,14 +609,14 @@ const TicketDetails = () => {
             Assign Ticket
           </button>
         )}
-        
+
         {canResolveTicket && (
           <button className="resolve-btn" onClick={handleResolveTicket}>
             Resolve Ticket
           </button>
         )}
       </div>
-      <button className="back-btn" onClick={() => navigate('/tickets')}>
+      <button className="back-btn" onClick={() => navigate("/tickets")}>
         Back
       </button>
 
@@ -563,10 +665,7 @@ const TicketDetails = () => {
             />
             <div className="modal-buttons">
               <button onClick={() => setShowNotesModal(false)}>Cancel</button>
-              <button 
-                onClick={handleAddNote} 
-                disabled={!noteText.trim()}
-              >
+              <button onClick={handleAddNote} disabled={!noteText.trim()}>
                 Add Note
               </button>
             </div>
