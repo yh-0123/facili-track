@@ -158,7 +158,7 @@
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
   overflow-y: auto;
-  max-height: calc(100vh - 280px); /* Adjusted for new filter layout */
+  max-height: calc(97vh - 280px); /* Adjusted for new filter layout */
   padding-right: 5px; /* Space for scrollbar */
 }
 

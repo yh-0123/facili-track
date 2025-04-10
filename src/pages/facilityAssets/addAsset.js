@@ -6,7 +6,7 @@ import "../index.css";
 import PageHeader from "../pageHeader";
 import supabase from "../../backend/DBClient/SupaBaseClient";
 import Cookies from "js-cookie";
-import QRCodeModal from './qrCodeModal';
+import QRCodeModal from "./qrCodeModal";
 
 const categories = [
   "Lights",
@@ -21,7 +21,7 @@ const AddAsset = () => {
   const [formData, setFormData] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [assetUrl, setAssetUrl] = useState('');
+  const [assetUrl, setAssetUrl] = useState("");
   const navigate = useNavigate();
 
   const handleCategoryClick = (category) => {
@@ -38,80 +38,239 @@ const AddAsset = () => {
       setCurrentPage(formData.isGreenTech === "Yes" ? 3 : 4);
       return;
     }
-  
+
     if (currentPage === 3) {
       setCurrentPage(4);
     }
   };
 
   const handlePrevious = () => {
+    if (currentPage === 3) {
+      setCurrentPage(2); // Go back to asset form
+    } else if (currentPage === 4) {
       // Check if isGreenTech is Yes
-    if (formData.isGreenTech === "Yes") {
-      setCurrentPage(3); // Navigate to the GreenTechForm (Page 3)
+      if (formData.isGreenTech === "Yes") {
+        setCurrentPage(3); // Go back to the GreenTechForm (Page 3)
+      } else {
+        setCurrentPage(2); // Skip directly to Asset Form (Page 2)
+      }
     } else {
-      setCurrentPage(2); // Skip directly to Asset Form (Page 2)
+      setCurrentPage(Math.max(1, currentPage - 1));
     }
   };
 
   useEffect(() => {
-    const savedData = localStorage.getItem('formData');
+    const savedData = localStorage.getItem("formData");
     if (savedData) {
       setFormData(JSON.parse(savedData));
     }
   }, []); // This runs when the component mounts
-  
+
   useEffect(() => {
     if (formData) {
-      localStorage.setItem('formData', JSON.stringify(formData));
+      localStorage.setItem("formData", JSON.stringify(formData));
     }
   }, [formData]); // This runs whenever formData changes
-  
+
   const handleSubmit = async () => {
     try {
-      // Add the selected category to the form data
       const assetData = { ...formData, assetType: selectedCategory };
       const user = JSON.parse(Cookies.get("userData"));
-      // Insert the asset data into the Supabase database
-      const { data, error } = await supabase
-        .from("facility_asset") // Replace "assets" with your actual table name
+
+      console.log("About to insert asset with data:", {
+        assetType: assetData.assetType,
+        assetName: assetData.assetName,
+        // Show other fields to verify data
+      });
+
+      // 1. Insert basic asset data
+      const { data: assetResult, error: assetError } = await supabase
+        .from("facility_asset")
         .insert({
-          // adminId: user.userId,
-          //TODO add worker id
-          assetType: assetData.assetType,
+          assetType: selectedCategory, // Use the selectedCategory directly
           assetName: assetData.assetName,
           assetPurchaseDate: assetData.assetPurchaseDate,
-          assetPurchasePrice: assetData.assetPurchasePrice,
-          assetLifeSpan: assetData.assetLifeSpan,
-          assetInstallationDate: assetData.assetInstallationDate,
+          assetPurchasePrice: parseFloat(assetData.assetPurchasePrice) || 0,
+          assetLifeSpan: parseInt(assetData.assetLifeSpan) || 0,
+          assetInstallationDate: assetData.assetInstallationDate || null,
           warrantyDate: assetData.warrantyDate,
-          quantity: assetData.assetQuantity,
+          assetQuantity: parseInt(assetData.assetQuantity) || 1, // Use quantity directly with default 1
           assetStatus: assetData.assetStatus,
-          isGreenTech: assetData.isGreenTech === "Yes" ? true : false,
-        });
-      if (error) {
-        throw new Error(error.message);
+          isGreenTech: assetData.isGreenTech === "Yes",
+        })
+        .select('assetId, assetName'); // Explicitly request the ID field
+
+      if (assetError) {
+        console.error("Asset insertion error:", assetError);
+        throw new Error(`Asset insertion failed: ${assetError.message}`);
       }
 
-    const assetId = data[0].id;
-    const generatedUrl =  `${window.location.origin}/asset/${assetId}`;
-   
-    setAssetUrl(generatedUrl);
-    setShowQRModal(true); // trigger QR modal
+      console.log("Raw Supabase response:", assetResult);
 
-    alert("Asset added successfully!");
+      let assetId;
+      
+      // Try to get the ID from the insert result
+      if (assetResult && assetResult.length > 0 && assetResult[0].assetId) {
+        assetId = assetResult[0].assetId;
+        console.log("Successfully got asset ID from insert:", assetId);
+      } else {
+        // Fallback: query for the most recently added asset with this name
+        console.log("Failed to get ID directly, trying to fetch the asset");
+        
+        const { data: fetchedAsset, error: fetchError } = await supabase
+          .from("facility_asset")
+          .select("assetId")
+          .eq("assetName", assetData.assetName)
+          .order("created_at", { ascending: false })
+          .limit(1);
+          
+        if (fetchError) {
+          console.error("Error fetching asset:", fetchError);
+          throw new Error(`Failed to fetch asset: ${fetchError.message}`);
+        }
+        
+        if (!fetchedAsset || fetchedAsset.length === 0) {
+          throw new Error("Could not find the newly created asset");
+        }
+        
+        assetId = fetchedAsset[0].assetId;
+        console.log("Retrieved asset ID via query:", assetId);
+      }
 
+      if (!assetId) {
+        throw new Error("Asset ID is undefined or null after multiple attempts");
+      }
+
+      // 2. Insert green technology data if applicable
+      if (assetData.isGreenTech === "Yes") {
+        console.log("Inserting green tech data for asset ID:", assetId);
+        
+        const { data: greenTechData, error: greenTechError } = await supabase
+          .from("green_technology")
+          .insert({
+            assetId: assetId,
+            energyRating: parseInt(assetData.energyRating) || 0,
+            carbonFootprintCertification: assetData.sirimCarbon === "Yes",
+            ecoLabel: assetData.sirimEco === "Yes",
+          });
+
+        if (greenTechError) {
+          console.error("Green tech insertion error:", greenTechError);
+          throw new Error(`Green tech insertion failed: ${greenTechError.message}`);
+        }
+        
+        console.log("Green tech data inserted successfully");
+      }
+
+      // 3. Insert category-specific data
+      console.log(`Inserting ${selectedCategory} specific data for asset ID:`, assetId);
+      
+      switch (selectedCategory) {
+        case "CCTV": {
+          const { data: cctvData, error: cctvError } = await supabase
+            .from("cctv")
+            .insert({
+              assetId: assetId,
+              resolution: assetData.resolution,
+              fieldOfView: assetData.fieldOfView,
+              recordingCapacity: assetData.recordingCapacity,
+              frameRate: assetData.frameRate,
+            });
+            
+          if (cctvError) {
+            console.error("CCTV insertion error:", cctvError);
+            throw new Error(`CCTV data insertion failed: ${cctvError.message}`);
+          }
+          console.log("CCTV data inserted successfully");
+          break;
+        }
+        case "Elevators": {
+          const { data: elevatorData, error: elevatorError } = await supabase
+            .from("elevators")
+            .insert({
+              assetId: assetId,
+              weightCapacity: parseFloat(assetData.weightCapacity) || 0,
+              dimension: assetData.dimension,
+              powerMechanism: assetData.powerMechanism,
+              speedOfTravel: parseFloat(assetData.speedOfTravel) || 0,
+              estimatedEnergyConsumption: parseFloat(
+                assetData.estimatedEnergyConsumption
+              ) || 0,
+            });
+            
+          if (elevatorError) {
+            console.error("Elevators insertion error:", elevatorError);
+            throw new Error(`Elevator data insertion failed: ${elevatorError.message}`);
+          }
+          console.log("Elevator data inserted successfully");
+          break;
+        }
+        case "Gym Equipment": {
+          const { data: gymData, error: gymError } = await supabase
+            .from("gym_equipment")
+            .insert({
+              assetId: assetId,
+              equipmentType: assetData.equipmentType,
+            });
+            
+          if (gymError) {
+            console.error("Gym equipment insertion error:", gymError);
+            throw new Error(`Gym equipment data insertion failed: ${gymError.message}`);
+          }
+          console.log("Gym equipment data inserted successfully");
+          break;
+        }
+        case "Lights": {
+          const { data: lightData, error: lightError } = await supabase
+            .from("lights")
+            .insert({
+              assetId: assetId,
+              lightType: assetData.lightType,
+              serialNumber: assetData.serialNumber,
+              voltage: parseFloat(assetData.voltage) || 0,
+              lumens: parseFloat(assetData.lumens) || 0,
+              estimatedEnergyConsumption: parseFloat(
+                assetData.estimatedEnergyConsumption
+              ) || 0,
+            });
+            
+          if (lightError) {
+            console.error("Lights insertion error:", lightError);
+            throw new Error(`Light data insertion failed: ${lightError.message}`);
+          }
+          console.log("Light data inserted successfully");
+          break;
+        }
+        case "Miscellaneous": {
+          const { data: miscData, error: miscError } = await supabase
+            .from("miscellaneous")
+            .insert({
+              assetId: assetId,
+              assetDescription: assetData.assetDescription,
+            });
+            
+          if (miscError) {
+            console.error("Miscellaneous insertion error:", miscError);
+            throw new Error(`Miscellaneous data insertion failed: ${miscError.message}`);
+          }
+          console.log("Miscellaneous data inserted successfully");
+          break;
+        }
+      }
+
+      const generatedUrl = `${window.location.origin}/asset/${assetId}`;
+      setAssetUrl(generatedUrl);
+      setShowQRModal(true);
+      
+      // Clear local storage after successful submission
+      localStorage.removeItem("formData");
+      
+      alert("Asset added successfully!");
     } catch (error) {
-      console.error("Error adding asset:", error.message);
-      alert("Error: " + error.message);
+      console.error("Error adding asset:", error);
+      alert(`Error: ${error.message}`);
     }
-
-  
   };
-
- 
-
-  const nextPage = () => setCurrentPage((prev) => prev + 1);
-  const prevPage = () => setCurrentPage((prev) => Math.max(1, prev - 1));
 
   return (
     <div className="add-asset-page">
@@ -179,6 +338,17 @@ const AddAsset = () => {
           prevPage={handlePrevious} // Pass prevPage
         />
       )}
+
+      {showQRModal && (
+        <QRCodeModal
+          show={showQRModal}
+          onClose={() => {
+            setShowQRModal(false);
+            navigate("/assets"); // Navigate back to assets page after closing modal
+          }}
+          assetUrl={assetUrl}
+        />
+      )}
     </div>
   );
 };
@@ -190,11 +360,10 @@ const AssetForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
 
   return (
     <div className="add-asset-page">
-    <h2 className="form-header">Add New {category}</h2>
+      <h2 className="form-header">Add New {category}</h2>
       <div className="asset-form">
         {/* <h3>Basic Information ({category})</h3> */}
         <form>
-          
           <div className="form-group">
             <label>Name</label>
             <input
@@ -254,13 +423,13 @@ const AssetForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
             <label>Quantity (units)</label>
             <input
               type="number"
-              name="quantity"
-              value={formData.quantity || ""}
+              name="assetQuantity"
+              value={formData.assetQuantity || ""}
               onChange={handleChange}
               required
             />
           </div>
-          
+
           <div className="form-group">
             <label>Status</label>
             <div className="radio-group">
@@ -294,44 +463,43 @@ const AssetForm = ({ category, setFormData, formData, nextPage, prevPage }) => {
               name="assetInstallationDate"
               value={formData.assetInstallationDate || ""}
               onChange={handleChange}
-              
             />
           </div>
           <div className="form-group">
-          <label>Is it using Green Technology?</label>
-              <div className="radio-group">
-                <label>
-                  <input
-                    type="radio"
-                    name="isGreenTech"
-                    value="Yes"
-                    checked={formData.isGreenTech === "Yes"}
-                    onChange={handleChange}
-                  />{" "}
-                  Yes
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="isGreenTech"
-                    value="No"
-                    checked={formData.isGreenTech === "No"}
-                    onChange={handleChange}
-                  />{" "}
-                  No
-                </label>
-              </div>
+            <label>Is it using Green Technology?</label>
+            <div className="radio-group">
+              <label>
+                <input
+                  type="radio"
+                  name="isGreenTech"
+                  value="Yes"
+                  checked={formData.isGreenTech === "Yes"}
+                  onChange={handleChange}
+                />{" "}
+                Yes
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="isGreenTech"
+                  value="No"
+                  checked={formData.isGreenTech === "No"}
+                  onChange={handleChange}
+                />{" "}
+                No
+              </label>
             </div>
+          </div>
         </form>
       </div>
-          <div className="button-group">
-            <button type="button" className="back-button" onClick={prevPage}>
-              Back
-            </button>
-            <button type="button" className="next-button" onClick={nextPage}>
-              Next
-            </button>
-          </div>
+      <div className="button-group">
+        <button type="button" className="back-button" onClick={prevPage}>
+          Back
+        </button>
+        <button type="button" className="next-button" onClick={nextPage}>
+          Next
+        </button>
+      </div>
     </div>
   );
 };
@@ -348,9 +516,8 @@ const GreenTechForm = ({
   };
 
   return (
-    
     <div className="add-asset-page">
-    <h2 className="form-header">Add New {category}</h2>
+      <h2 className="form-header">Add New {category}</h2>
       <div className="asset-form">
         <h3>Green Tech-Related Information ({category})</h3>
         <label>Certified by SIRIM Eco Labelling Scheme?</label>
@@ -407,9 +574,9 @@ const GreenTechForm = ({
         <label>Energy Efficiency Rating (stars)</label>
         <input
           type="number"
-          name="efficiency"
+          name="energyRating"
           placeholder="if applicable"
-          value={formData.efficiency || ""}
+          value={formData.energyRating || ""}
           onChange={handleChange}
           required
         />
@@ -444,7 +611,7 @@ const CategorySpecificForm = ({
 
   return (
     <div className="add-asset-page">
-    <h2 className="form-header">Add New {category}</h2>
+      <h2 className="form-header">Add New {category}</h2>
       <div className="asset-form">
         <h3>Extended Information ({category})</h3>
 
@@ -486,12 +653,12 @@ const CategorySpecificForm = ({
 
             <div className="form-group">
               <label>Lumens (lm)</label>
-              <input 
-                type="number" 
-                name="lumens" 
+              <input
+                type="number"
+                name="lumens"
                 value={formData.lumens || ""}
-                onChange={handleChange} 
-                required 
+                onChange={handleChange}
+                required
               />
             </div>
 
@@ -664,6 +831,5 @@ const CategorySpecificForm = ({
     </div>
   );
 };
-
 
 export default AddAsset;

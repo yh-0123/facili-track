@@ -268,17 +268,17 @@ const CreateTicket = () => {
 
         <label>Defect Description</label>
         <textarea
-          placeholder="Enter Defect Description with location stated. Example: Light not functioning in 5th floor Gym Room."
+          placeholder="Enter Detailed Defect Description. Example: 2 light not malfunctioning, it is flickering since yesterday."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
         ></textarea>
 
-        <label>Geolocation of Defect (Optional)</label>
+        <label>Location of Defect (Optional)</label>
         <div className="location-input">
           <input
             type="text"
-            placeholder="Location details (will be filled automatically when you select on map)"
+            placeholder="Enter location details (you may state the location of defect or it will be filled automatically when you select on map)"
             value={locationText}
             onChange={(e) => setLocationText(e.target.value)}
           />
