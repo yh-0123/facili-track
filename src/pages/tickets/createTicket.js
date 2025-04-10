@@ -227,14 +227,21 @@ const CreateTicket = () => {
       try {
         const adminIds = await getAdminUserIds();
         if (adminIds && adminIds.length > 0) {
-          await sendNotification(
+          console.log('Sending notifications to admins:', adminIds); // Debug log
+          const notificationSent = await sendNotification(
             adminIds,
             `New ticket "${title}" submitted by ${user.userName}`,
             ticketId
           );
+          if (!notificationSent) {
+            console.warn('Failed to send notifications to admins');
+          }
+        } else {
+          console.warn('No admin users found to notify');
         }
       } catch (notificationError) {
-        console.error("Error sending notifications:", notificationError);
+        console.error('Error in notification process:', notificationError);
+        // Don't throw the error - just log it since notifications aren't critical
       }
 
       // If successful, navigate back or show a success message

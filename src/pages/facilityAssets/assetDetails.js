@@ -286,12 +286,16 @@ const AssetDetails = () => {
             <p>
               <strong>Category:</strong>{" "}
               {isEditing ? (
-                <input
-                  type="text"
-                  name="assetType"
+                <select name="assetType"
                   value={editedAsset.assetType}
                   onChange={handleInputChange}
-                />
+                >
+                  <option value="Lights">Lights</option>
+                  <option value="Elevators">Elevators</option>
+                  <option value="CCTV">CCTV</option>
+                  <option value="Gym Equipment">Gym Equipment</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                </select>
               ) : (
                 asset.assetType
               )}
@@ -310,7 +314,7 @@ const AssetDetails = () => {
               )}
             </p>
             <p>
-              <strong>Purchase Price:</strong>{" "}
+              <strong>Purchase Price (RM):</strong>{" "}
               {isEditing ? (
                 <input
                   type="number"

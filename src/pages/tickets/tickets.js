@@ -12,13 +12,11 @@ import Cookies from "js-cookie";
 const Tickets = () => {
   const [tickets, setTickets] = useState([]); // State to store tickets from Supabase
   const [activeFilter, setActiveFilter] = useState("Not Assigned");
-  const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true); // Loading state
   const [userRole, setUserRole] = useState(null); // State to store user role
   const [userId, setUserId] = useState(null); // State for user ID
   const [searchTerm, setSearchTerm] = useState(""); // State for search term
   const [dateFilter, setDateFilter] = useState("all"); // Default to showing all dates
-  const ticketsPerPage = 5;
   const navigate = useNavigate();
 
   // Define filters based on user role
@@ -195,17 +193,9 @@ const Tickets = () => {
 
   const handleDateFilterChange = (e) => {
     setDateFilter(e.target.value);
-    setPageNumber(1); // Reset to first page when filter changes
   };
 
   const filteredTickets = filterTickets();
-  const startIndex = (pageNumber - 1) * ticketsPerPage;
-  const displayedTickets = filteredTickets.slice(
-    startIndex,
-    startIndex + ticketsPerPage
-  );
-  
-  const totalPages = Math.ceil(filteredTickets.length / ticketsPerPage);
 
   return (
     <div className="tickets-page">
@@ -218,7 +208,6 @@ const Tickets = () => {
             <PageHeader title="Tickets" />
           )}
         
-
         <div className="search-bar">
           <FaSearch style={{ marginTop: "10px" }} />
           <input 
@@ -249,7 +238,6 @@ const Tickets = () => {
                 className={filter === activeFilter ? "active" : ""}
                 onClick={() => {
                   setActiveFilter(filter);
-                  setPageNumber(1);
                 }}
               >
                 {filter}
@@ -269,8 +257,8 @@ const Tickets = () => {
         <div className="tickets-list">
           {loading ? (
             <p>Loading tickets...</p>
-          ) : displayedTickets.length > 0 ? (
-            displayedTickets.map((ticket) => {
+          ) : filteredTickets.length > 0 ? (
+            filteredTickets.map((ticket) => {
               // Determine the color based on status
               const getStatusColor = (ticket) => {
                 if (ticket.ticketStatus === TicketStatusEnum.NOT_ASSIGNED)
@@ -328,25 +316,6 @@ const Tickets = () => {
             <p>No tickets available for the selected filters.</p>
           )}
         </div>
-        
-        {/* Pagination controls */}
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button 
-              onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
-              disabled={pageNumber === 1}
-            >
-              Previous
-            </button>
-            <span>{pageNumber} of {totalPages}</span>
-            <button 
-              onClick={() => setPageNumber(prev => Math.min(prev + 1, totalPages))}
-              disabled={pageNumber === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

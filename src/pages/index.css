@@ -20,6 +20,14 @@ body {
   text-align: left;
 }
 
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
+}
+
 .topbar {
   position: fixed;
   top: 0;

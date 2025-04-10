@@ -13,11 +13,11 @@ export const sendNotification = async (recipientIds, message, ticketId = null) =
     
     // Create notification objects for each recipient
     const notifications = recipients.map(recipientId => ({
-      recipient_id: recipientId,
-      message: message,
-      created_at: new Date().toISOString(),
-      is_read: false,
-      ticket_id: ticketId // This links the notification to a specific ticket
+      recipientId: recipientId,
+      notificationMessage: message,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      ticketId: ticketId // This links the notification to a specific ticket
     }));
     
     // Insert notifications into the database
@@ -30,6 +30,7 @@ export const sendNotification = async (recipientIds, message, ticketId = null) =
       return false;
     }
     
+    console.log('Notifications sent successfully:', data);
     return true;
   } catch (error) {
     console.error("Unexpected error in sendNotification:", error);

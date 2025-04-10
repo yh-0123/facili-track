@@ -21,7 +21,7 @@
     
     /* Enable scrolling if content overflows */
     max-height: 90vh;  
-    overflow-y: auto;
+    
 }
 
 .create-account-page .content {

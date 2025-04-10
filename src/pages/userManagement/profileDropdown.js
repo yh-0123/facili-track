@@ -72,40 +72,48 @@ const ProfileDropdown = ({ updateLoginState }) => {
   };
 
   // Expand the notification fetching to include ticket information
-const handleNotificationClick = async () => {
-  setIsNotificationOpen(!isNotificationOpen);
+  const handleNotificationClick = async () => {
+    setIsNotificationOpen(!isNotificationOpen);
 
-  if (!isNotificationOpen && userId) {
-    // Fetch notifications with joined ticket information if available
-    const { data, error } = await supabase
-      .from("notifications")
-      .select(`
-        notificationId,
-        notificationMessage,
-        createdAt,
-        isRead,
-        ticketId,
-        tickets:ticketId (ticketId, ticketTitle)
-      `)
-      .eq("recipientId", userId)
-      .order("createdAt", { ascending: false });
+    if (!isNotificationOpen && userId) {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select(
+          `
+          notificationId,
+          notificationMessage,
+          createdAt,
+          isRead,
+          ticketId,
+          tickets:ticketId (ticketId, ticketTitle)
+        `
+        )
+        .eq("recipientId", userId)
+        .order("createdAt", { ascending: false });
 
-    if (error) {
-      console.error("Failed to fetch notifications", error);
-    } else {
-      setNotifications(data);
-      
-      // Mark notifications as read
-      const unreadNotifications = data.filter(n => !n.isRead).map(n => n.id);
-      if (unreadNotifications.length > 0) {
-        await supabase
-          .from("notifications")
-          .update({ isRead: true })
-          .in("id", unreadNotifications);
+      if (error) {
+        console.error("Failed to fetch notifications", error);
+      } else {
+        setNotifications(data);
+
+        // Fix: Only update if there are unread notifications
+        const unreadNotifications = data
+          .filter((n) => !n.isRead)
+          .map((n) => n.notificationId); // Change from n.id to n.notificationId
+
+        if (unreadNotifications.length > 0) {
+          const { error: updateError } = await supabase
+            .from("notifications")
+            .update({ isRead: true })
+            .in("notificationId", unreadNotifications); // Change from 'id' to 'notificationId'
+
+          if (updateError) {
+            console.error("Error marking notifications as read:", updateError);
+          }
+        }
       }
     }
-  }
-};
+  };
 
   // Close dropdown if clicked outside (handles both profile and notification dropdowns)
   useEffect(() => {
@@ -166,19 +174,23 @@ const handleNotificationClick = async () => {
           ) : (
             <ul>
               {notifications.map((notification) => (
-                <li 
-                  key={notification.id} 
-                  className={`notification-item ${notification.isRead ? "" : "unread"}`}
+                <li
+                  key={notification.notificationId} // Fix: Changed from id to notificationId
+                  className={`notification-item ${
+                    notification.isRead ? "" : "unread"
+                  }`}
                   onClick={() => {
-                    // If notification has a ticket, navigate to that ticket's detail page
                     if (notification.ticketId) {
                       navigate(`/ticket/${notification.ticketId}`);
                       setIsNotificationOpen(false);
                     }
                   }}
                 >
-                  <p>{notification.message}</p>
-                  <small>{new Date(notification.createdAt).toLocaleString()}</small>
+                  <p>{notification.notificationMessage}</p>{" "}
+                  {/* Fix: Changed from message to notificationMessage */}
+                  <small>
+                    {new Date(notification.createdAt).toLocaleString()}
+                  </small>
                 </li>
               ))}
             </ul>
