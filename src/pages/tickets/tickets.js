@@ -171,7 +171,22 @@ const Tickets = () => {
           (ticket) => ticket.ticketStatus === TicketStatusEnum.RESOLVED
         );
       }
-    } else {
+    } 
+    
+    else if (userRole === userRolesEnum.FACILITY_WORKER) {
+      // For resident users
+      if (activeFilter === "Assigned") {
+        return filtered.filter(
+          (ticket) => ticket.ticketStatus === TicketStatusEnum.ASSIGNED
+        );
+      } else if (activeFilter === "Resolved") {
+        return filtered.filter(
+          (ticket) => ticket.ticketStatus === TicketStatusEnum.RESOLVED
+        );
+      }
+    }
+    
+    else {
       // For admin and facility worker users
       if (activeFilter === "Not Assigned") {
         return filtered.filter(

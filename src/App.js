@@ -59,7 +59,7 @@ function App() {
   }, [authChangeCounter]); // Now depends on authChangeCounter which will update on login/logout
 
   return (
-    <LoadScript googleMapsApiKey="AIzaSyB8la60mICGiVpZqUysy-cYWy_-20-10y0">
+    <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY}>
       <Router>
         <div className="app-container">
           {isLoggedIn && (
@@ -142,16 +142,17 @@ function App() {
                 }
               />
               <Route
+                path="/tickets"
+                element={isLoggedIn ? <Tickets /> : <Navigate to="/" />}
+              />
+              {userRole === userRolesEnum.ADMIN && (
+              <Route
                 path="/dashboard"
                 element={isLoggedIn ? <Dashboard /> : <Navigate to="/" />}
-              />
+              />)}
               <Route
                 path="/assets"
                 element={isLoggedIn ? <FacilityAssets /> : <Navigate to="/" />}
-              />
-              <Route
-                path="/tickets"
-                element={isLoggedIn ? <Tickets /> : <Navigate to="/" />}
               />
               <Route
                 path="/create-account"

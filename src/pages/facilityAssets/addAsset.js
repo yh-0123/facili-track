@@ -258,7 +258,7 @@ const AddAsset = () => {
         }
       }
 
-      const generatedUrl = `${window.location.origin}/asset/${assetId}`;
+      const generatedUrl = `${window.location.origin}/asset-details/${assetId}`;
       setAssetUrl(generatedUrl);
       setShowQRModal(true);
       

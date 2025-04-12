@@ -21,6 +21,18 @@ const AssetDetails = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
 
+  // Add this function after the state declarations
+  const isFieldEditable = (fieldName) => {
+    if (userRole === userRolesEnum.FACILITY_WORKER) {
+      return [
+        "assetStatus",
+        "assetInstallationDate",
+        "assetLastMaintenanceDate",
+      ].includes(fieldName);
+    }
+    return true;
+  };
+
   useEffect(() => {
     // Check user authentication status from cookies
     const userData = Cookies.get("userData");
@@ -143,20 +155,66 @@ const AssetDetails = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setEditedAsset({ ...editedAsset, [name]: value });
+
+    // Convert string 'true'/'false' values to actual booleans for boolean fields
+    if (
+      name === "isGreenTech" ||
+      name === "ecoLabel" ||
+      name === "carbonFootprintCertification"
+    ) {
+      setEditedAsset({ ...editedAsset, [name]: value === "true" });
+    } else {
+      setEditedAsset({ ...editedAsset, [name]: value || "" });
+    }
   };
 
   const handleCategoryInputChange = (e) => {
     const { name, value } = e.target;
-    setEditedCategoryData({ ...editedCategoryData, [name]: value });
+    setEditedCategoryData({ ...editedCategoryData, [name]: value || "" });
   };
 
   const handleSave = async () => {
     try {
-      // Update basic asset data
+      // Create a copy of editedAsset without the green tech fields
+      const assetUpdate = { ...editedAsset };
+
+      // Remove green tech fields from the main asset update
+      if (assetUpdate.hasOwnProperty("energyRating"))
+        delete assetUpdate.energyRating;
+      if (assetUpdate.hasOwnProperty("ecoLabel")) delete assetUpdate.ecoLabel;
+      if (assetUpdate.hasOwnProperty("carbonFootprintCertification"))
+        delete assetUpdate.carbonFootprintCertification;
+
+      // For facility workers, only update allowed fields
+      if (userRole === userRolesEnum.FACILITY_WORKER) {
+        const allowedUpdates = {
+          assetStatus: editedAsset.assetStatus || "",
+          assetInstallationDate: editedAsset.assetInstallationDate || null,
+          assetLastMaintenanceDate:
+            editedAsset.assetLastMaintenanceDate || null,
+        };
+
+        const { error: assetError } = await supabase
+          .from("facility_asset")
+          .update(allowedUpdates)
+          .eq("assetId", id);
+
+        if (assetError) {
+          console.error("Error updating asset:", assetError.message);
+          return;
+        }
+
+        // Update state after successful save
+        setAsset({ ...asset, ...allowedUpdates });
+        setIsEditing(false);
+        alert("Asset updated successfully!");
+        return;
+      }
+
+      // Existing save logic for other roles
       const { error: assetError } = await supabase
         .from("facility_asset")
-        .update(editedAsset)
+        .update(assetUpdate)
         .eq("assetId", id);
 
       if (assetError) {
@@ -208,23 +266,47 @@ const AssetDetails = () => {
       // Update green technology data if applicable
       if (editedAsset.isGreenTech) {
         const greenTechData = {
-          energyRating: editedAsset.energyRating,
-          ecoLabel: editedAsset.ecoLabel,
+          energyRating: editedAsset.energyRating || 0,
+          ecoLabel: editedAsset.ecoLabel || false,
           carbonFootprintCertification:
-            editedAsset.carbonFootprintCertification,
+            editedAsset.carbonFootprintCertification || false,
+          assetId: id, // Make sure to include the assetId reference
         };
 
-        const { error: greenTechError } = await supabase
+        // Check if the green tech entry already exists
+        const { data: existingGreenTech } = await supabase
           .from("green_technology")
-          .update(greenTechData)
-          .eq("assetId", id);
+          .select("*")
+          .eq("assetId", id)
+          .single();
 
-        if (greenTechError) {
-          console.error(
-            "Error updating green tech details:",
-            greenTechError.message
-          );
-          return;
+        if (existingGreenTech) {
+          // Update existing record
+          const { error: greenTechError } = await supabase
+            .from("green_technology")
+            .update(greenTechData)
+            .eq("assetId", id);
+
+          if (greenTechError) {
+            console.error(
+              "Error updating green tech details:",
+              greenTechError.message
+            );
+            return;
+          }
+        } else {
+          // Insert new record
+          const { error: greenTechError } = await supabase
+            .from("green_technology")
+            .insert([greenTechData]);
+
+          if (greenTechError) {
+            console.error(
+              "Error creating green tech details:",
+              greenTechError.message
+            );
+            return;
+          }
         }
       }
 
@@ -272,11 +354,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Name:</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetName") ? (
                 <input
                   type="text"
                   name="assetName"
-                  value={editedAsset.assetName}
+                  value={editedAsset.assetName || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -285,9 +367,10 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Category:</strong>{" "}
-              {isEditing ? (
-                <select name="assetType"
-                  value={editedAsset.assetType}
+              {isEditing && isFieldEditable("assetType") ? (
+                <select
+                  name="assetType"
+                  value={editedAsset.assetType || ""}
                   onChange={handleInputChange}
                 >
                   <option value="Lights">Lights</option>
@@ -302,11 +385,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Purchase Date:</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetPurchaseDate") ? (
                 <input
                   type="date"
                   name="assetPurchaseDate"
-                  value={editedAsset.assetPurchaseDate}
+                  value={editedAsset.assetPurchaseDate || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -315,11 +398,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Purchase Price (RM):</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetPurchasePrice") ? (
                 <input
                   type="number"
                   name="assetPurchasePrice"
-                  value={editedAsset.assetPurchasePrice}
+                  value={editedAsset.assetPurchasePrice || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -328,11 +411,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Life Span (years):</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetLifeSpan") ? (
                 <input
                   type="number"
                   name="assetLifeSpan"
-                  value={editedAsset.assetLifeSpan}
+                  value={editedAsset.assetLifeSpan || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -341,11 +424,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Warranty Expiry Date:</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("warrantyDate") ? (
                 <input
                   type="date"
                   name="warrantyDate"
-                  value={editedAsset.warrantyDate}
+                  value={editedAsset.warrantyDate || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -354,10 +437,10 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Status:</strong>
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetStatus") ? (
                 <select
                   name="assetStatus"
-                  value={editedAsset.assetStatus}
+                  value={editedAsset.assetStatus || ""}
                   onChange={handleInputChange}
                 >
                   <option value="New">New</option>
@@ -370,11 +453,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Installation Date:</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetInstallationDate") ? (
                 <input
                   type="date"
                   name="assetInstallationDate"
-                  value={editedAsset.assetInstallationDate}
+                  value={editedAsset.assetInstallationDate || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -383,11 +466,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Quantity:</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetQuantity") ? (
                 <input
                   type="number"
                   name="assetQuantity"
-                  value={editedAsset.assetQuantity}
+                  value={editedAsset.assetQuantity || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -396,11 +479,11 @@ const AssetDetails = () => {
             </p>
             <p>
               <strong>Last Maintenance Date:</strong>{" "}
-              {isEditing ? (
+              {isEditing && isFieldEditable("assetLastMaintenanceDate") ? (
                 <input
                   type="date"
                   name="assetLastMaintenanceDate"
-                  value={editedAsset.assetLastMaintenanceDate}
+                  value={editedAsset.assetLastMaintenanceDate || ""}
                   onChange={handleInputChange}
                 />
               ) : (
@@ -415,18 +498,32 @@ const AssetDetails = () => {
               <h3>Green Technology Information</h3>
               <div className="details-grid">
                 <p>
-                  <strong>Uses Green Technology:</strong> Yes
+                  <strong>Uses Green Technology:</strong>
+                  {isEditing && isFieldEditable("isGreenTech") ? (
+                    <select
+                      name="isGreenTech"
+                      value={String(editedAsset.isGreenTech || false)}
+                      onChange={handleInputChange}
+                    >
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  ) : asset.isGreenTech ? (
+                    "Yes"
+                  ) : (
+                    "No"
+                  )}
                 </p>
                 <p>
                   <strong>SIRIM Eco Labelling Certified:</strong>
-                  {isEditing ? (
+                  {isEditing && isFieldEditable("ecoLabel") ? (
                     <select
                       name="ecoLabel"
-                      value={editedAsset.ecoLabel}
+                      value={String(editedAsset.ecoLabel || false)}
                       onChange={handleInputChange}
                     >
-                      <option value={true}>Yes</option>
-                      <option value={false}>No</option>
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
                     </select>
                   ) : asset.ecoLabel ? (
                     "Yes"
@@ -436,14 +533,17 @@ const AssetDetails = () => {
                 </p>
                 <p>
                   <strong>SIRIM Carbon Footprint Certified:</strong>
-                  {isEditing ? (
+                  {isEditing &&
+                  isFieldEditable("carbonFootprintCertification") ? (
                     <select
                       name="carbonFootprintCertification"
-                      value={editedAsset.carbonFootprintCertification}
+                      value={String(
+                        editedAsset.carbonFootprintCertification || false
+                      )}
                       onChange={handleInputChange}
                     >
-                      <option value={true}>Yes</option>
-                      <option value={false}>No</option>
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
                     </select>
                   ) : asset.carbonFootprintCertification ? (
                     "Yes"
@@ -453,11 +553,11 @@ const AssetDetails = () => {
                 </p>
                 <p>
                   <strong>Energy Efficiency Rating (stars):</strong>
-                  {isEditing ? (
+                  {isEditing && isFieldEditable("energyRating") ? (
                     <input
                       type="number"
                       name="energyRating"
-                      value={editedAsset.energyRating}
+                      value={editedAsset.energyRating || ""}
                       onChange={handleInputChange}
                     />
                   ) : (
@@ -477,11 +577,11 @@ const AssetDetails = () => {
                   <>
                     <p>
                       <strong>Light Type:</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("lightType") ? (
                         <input
                           type="text"
                           name="lightType"
-                          value={editedCategoryData.lightType}
+                          value={editedCategoryData.lightType || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -490,11 +590,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Serial Number:</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("serialNumber") ? (
                         <input
                           type="text"
                           name="serialNumber"
-                          value={editedCategoryData.serialNumber}
+                          value={editedCategoryData.serialNumber || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -503,11 +603,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Voltage (V):</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("voltage") ? (
                         <input
                           type="number"
                           name="voltage"
-                          value={editedCategoryData.voltage}
+                          value={editedCategoryData.voltage || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -516,11 +616,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Lumens (lm):</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("lumens") ? (
                         <input
                           type="number"
                           name="lumens"
-                          value={editedCategoryData.lumens}
+                          value={editedCategoryData.lumens || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -529,11 +629,14 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Estimated Energy Consumption (kWh/year):</strong>
-                      {isEditing ? (
+                      {isEditing &&
+                      isFieldEditable("estimatedEnergyConsumption") ? (
                         <input
                           type="number"
                           name="estimatedEnergyConsumption"
-                          value={editedCategoryData.estimatedEnergyConsumption}
+                          value={
+                            editedCategoryData.estimatedEnergyConsumption || ""
+                          }
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -547,11 +650,11 @@ const AssetDetails = () => {
                   <>
                     <p>
                       <strong>Weight Capacity (kg):</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("weightCapacity") ? (
                         <input
                           type="number"
                           name="weightCapacity"
-                          value={editedCategoryData.weightCapacity}
+                          value={editedCategoryData.weightCapacity || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -560,11 +663,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Dimension (m):</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("dimension") ? (
                         <input
                           type="text"
                           name="dimension"
-                          value={editedCategoryData.dimension}
+                          value={editedCategoryData.dimension || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -573,11 +676,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Power Mechanism:</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("powerMechanism") ? (
                         <input
                           type="text"
                           name="powerMechanism"
-                          value={editedCategoryData.powerMechanism}
+                          value={editedCategoryData.powerMechanism || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -586,11 +689,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Speed of Travel (m/s):</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("speedOfTravel") ? (
                         <input
                           type="number"
                           name="speedOfTravel"
-                          value={editedCategoryData.speedOfTravel}
+                          value={editedCategoryData.speedOfTravel || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -599,11 +702,14 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Estimated Energy Consumption (kWh/year):</strong>
-                      {isEditing ? (
+                      {isEditing &&
+                      isFieldEditable("estimatedEnergyConsumption") ? (
                         <input
                           type="number"
                           name="estimatedEnergyConsumption"
-                          value={editedCategoryData.estimatedEnergyConsumption}
+                          value={
+                            editedCategoryData.estimatedEnergyConsumption || ""
+                          }
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -617,11 +723,11 @@ const AssetDetails = () => {
                   <>
                     <p>
                       <strong>Resolution:</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("resolution") ? (
                         <input
                           type="text"
                           name="resolution"
-                          value={editedCategoryData.resolution}
+                          value={editedCategoryData.resolution || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -630,11 +736,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Field of View:</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("fieldOfView") ? (
                         <input
                           type="text"
                           name="fieldOfView"
-                          value={editedCategoryData.fieldOfView}
+                          value={editedCategoryData.fieldOfView || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -643,11 +749,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Recording Capacity (GB):</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("recordingCapacity") ? (
                         <input
                           type="number"
                           name="recordingCapacity"
-                          value={editedCategoryData.recordingCapacity}
+                          value={editedCategoryData.recordingCapacity || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -656,11 +762,11 @@ const AssetDetails = () => {
                     </p>
                     <p>
                       <strong>Frame Rate (fps):</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("frameRate") ? (
                         <input
                           type="number"
                           name="frameRate"
-                          value={editedCategoryData.frameRate}
+                          value={editedCategoryData.frameRate || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -674,11 +780,11 @@ const AssetDetails = () => {
                   <>
                     <p>
                       <strong>Equipment Type:</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("equipmentType") ? (
                         <input
                           type="text"
                           name="equipmentType"
-                          value={editedCategoryData.equipmentType}
+                          value={editedCategoryData.equipmentType || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (
@@ -692,11 +798,11 @@ const AssetDetails = () => {
                   <>
                     <p>
                       <strong>Asset Description:</strong>
-                      {isEditing ? (
+                      {isEditing && isFieldEditable("assetDescription") ? (
                         <input
                           type="text"
                           name="assetDescription"
-                          value={editedCategoryData.assetDescription}
+                          value={editedCategoryData.assetDescription || ""}
                           onChange={handleCategoryInputChange}
                         />
                       ) : (

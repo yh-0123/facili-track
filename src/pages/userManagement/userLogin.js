@@ -85,8 +85,8 @@ const UserLogin = ({ setIsLoggedIn }) => {
       // Set isLoggedIn to true
       setIsLoggedIn(true);
 
-      // Redirect to the dashboard page
-      navigate("/dashboard"); // Redirect to dashboard
+      // Redirect to the tickets page
+      navigate("/tickets"); // Redirect to tickets page
     } catch (err) {
       setErrorMessage(err.message);
     } finally {
