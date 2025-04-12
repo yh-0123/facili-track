@@ -24,6 +24,10 @@ const Tickets = () => {
     if (role === userRolesEnum.RESIDENT) {
       return ["Open", "Resolved"];
     }
+
+    else if (role === userRolesEnum.FACILITY_WORKER) {
+      return ["Assigned", "Resolved"];
+    }
     return ["Not Assigned", "Assigned", "Resolved"];
   };
 
@@ -51,6 +55,10 @@ const Tickets = () => {
     
         if (userInfo.userRole === userRolesEnum.RESIDENT) {
           setActiveFilter("Open");
+        }
+
+        if (userInfo.userRole === userRolesEnum.FACILITY_WORKER) {
+          setActiveFilter("Assigned");
         }
     
         // Fixed query structure for Supabase
@@ -174,7 +182,7 @@ const Tickets = () => {
     } 
     
     else if (userRole === userRolesEnum.FACILITY_WORKER) {
-      // For resident users
+      // For FACILITY_WORKER users
       if (activeFilter === "Assigned") {
         return filtered.filter(
           (ticket) => ticket.ticketStatus === TicketStatusEnum.ASSIGNED
@@ -186,8 +194,8 @@ const Tickets = () => {
       }
     }
     
-    else {
-      // For admin and facility worker users
+    else if (userRole === userRolesEnum.ADMIN){
+      // For admin users
       if (activeFilter === "Not Assigned") {
         return filtered.filter(
           (ticket) => ticket.ticketStatus === TicketStatusEnum.NOT_ASSIGNED
@@ -227,7 +235,7 @@ const Tickets = () => {
           <FaSearch style={{ marginTop: "10px" }} />
           <input 
             type="text" 
-            placeholder="Search for ticket" 
+            placeholder="Search by Ticket ID or Title" 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -291,7 +299,17 @@ const Tickets = () => {
                    (ticket.ticketStatus === TicketStatusEnum.NOT_ASSIGNED || 
                     ticket.ticketStatus === TicketStatusEnum.ASSIGNED)) {
                   return "Open";
-                } else {
+                } 
+                
+                else if (userRole === userRolesEnum.FACILITY_WORKER) {
+                  return  ticket.ticketStatus === TicketStatusEnum.ASSIGNED
+                    ? "Assigned"
+                    : ticket.ticketStatus === TicketStatusEnum.RESOLVED
+                    ? "Resolved"
+                    : "Unknown Status";
+                }
+
+                else {
                   return ticket.ticketStatus === TicketStatusEnum.NOT_ASSIGNED
                     ? "Not Assigned"
                     : ticket.ticketStatus === TicketStatusEnum.ASSIGNED
@@ -300,6 +318,7 @@ const Tickets = () => {
                     ? "Resolved"
                     : "Unknown Status";
                 }
+                
               };
 
               return (

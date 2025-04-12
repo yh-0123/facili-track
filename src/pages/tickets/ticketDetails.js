@@ -648,11 +648,11 @@ const TicketDetails = () => {
             <p>
               <strong>Status:</strong>{" "}
               <h5>
-                {ticketStatus === TicketStatusEnum.NOT_ASSIGNED
+                {ticket.ticketStatus === TicketStatusEnum.NOT_ASSIGNED
                   ? "Not Assigned"
-                  : ticketStatus === TicketStatusEnum.ASSIGNED
+                  : ticket.ticketStatus === TicketStatusEnum.ASSIGNED
                   ? "Assigned"
-                  : ticketStatus === TicketStatusEnum.RESOLVED
+                  : ticket.ticketStatus === TicketStatusEnum.RESOLVED
                   ? "Resolved"
                   : "Unknown Status"}
               </h5>
@@ -727,11 +727,7 @@ const TicketDetails = () => {
               {ticketNotes.length > 0 ? (
                 ticketNotes.map((note, index) => (
                   <div key={index} className="note-item">
-                    <p className="note-text">
-                      {typeof note === "object" && note.note
-                        ? note.note
-                        : String(note)}
-                    </p>
+                    
                     <p className="note-meta">
                       Added by{" "}
                       {typeof note === "object" && note.addedBy
@@ -741,6 +737,11 @@ const TicketDetails = () => {
                       {typeof note === "object" && note.timestamp
                         ? formatDate(note.timestamp)
                         : "Unknown date"}
+                    </p>
+                    <p className="note-text">
+                      {typeof note === "object" && note.note
+                        ? note.note
+                        : String(note)}
                     </p>
                   </div>
                 ))

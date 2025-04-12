@@ -45,7 +45,7 @@
 
 /* Add New Asset Button */
 .add-asset-btn {
-  background-color: #d18473;
+  background-color: #d46a4f;
   color: white;
   padding: 10px 15px;
   border: none;
@@ -67,7 +67,7 @@
   flex-wrap: wrap;
   gap: 15px;
   margin-bottom: 20px;
-  background-color: #f9f9f9;
+  background-color: none;
   padding: 15px;
   border-radius: 8px;
   align-items: center;
@@ -208,7 +208,7 @@
 }
 
 .view-details {
-  color: #d18473;
+  color: #d46a4f;
   text-decoration: none;
   font-weight: bold;
   cursor: pointer;
