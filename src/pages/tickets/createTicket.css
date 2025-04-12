@@ -18,7 +18,7 @@
 }
 
 /* Back Button */
-.back1-button {
+.back-button {
   width: 140px;
   height: 45px;
   background: #d46a4f;
@@ -172,7 +172,7 @@
   margin-top: 20px;
 }
 
-.back-button {
+.back1-button {
   padding: 10px 20px;
   background-color: #6c757d;
   color: white;
@@ -182,13 +182,13 @@
   cursor: pointer;
 }
 
-.back-button:hover {
+.back1-button:hover {
   background-color: #5a6268;
 }
 
 .submit-button {
   padding: 10px 20px;
-  background-color: #e49b79;
+  background-color: #d46a4f;
   color: white;
   border: none;
   border-radius: 5px;
@@ -197,7 +197,7 @@
 }
 
 .submit-button:hover {
-  background-color: #d48568;
+  background-color: #C15E48;
 }
 
 /* Submit Button */
@@ -220,21 +220,99 @@
 }
 
 /* Add this to your createTicket.css file */
-.location-buttons {
+.location-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.location-input input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  background-color: #fff;
+  transition: border-color 0.3s ease;
+}
+
+.location-input input:focus {
+  border-color: #e49b79;
+  outline: none;
+}
+
+/* Address Search Section Inside Location */
+.address-search {
   display: flex;
   gap: 10px;
 }
 
-.current-location-button {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 8px 12px;
-  background-color: #4CAF50;
+.address-search input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.address-search input:focus {
+  border-color: #e49b79;
+  outline: none;
+}
+
+.address-search .search-button {
+  padding: 10px 14px;
+  background-color: #6c90a6;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 5px;
+  font-size: 14px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.3s ease;
+}
+
+.address-search .search-button:hover {
+  background-color: #5a7c91;
+}
+
+/* Buttons for Location Controls */
+.location-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.location-buttons button {
+  padding: 10px 14px;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.3s ease;
+}
+
+.map-toggle-button {
+  background-color: #e49b79;
+}
+
+.map-toggle-button:hover {
+  background-color: #d48568;
+}
+
+.current-location-button {
+  background-color: #4CAF50;
 }
 
 .current-location-button:hover {
@@ -245,6 +323,15 @@
   background-color: #cccccc;
   cursor: not-allowed;
 }
+
+.clear-location-button {
+  background-color: #d46a4f;
+}
+
+.clear-location-button:hover {
+  background-color: #b15542;
+}
+
 
 /* Responsive Design for iPhone 13 */
 @media screen and (max-width: 390px) {

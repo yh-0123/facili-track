@@ -90,14 +90,14 @@ const QRCodeModal = ({ assetUrl, onClose }) => {
               <p className="qr-modal-url">{modifiedAssetUrl}</p>
             </div>
             <div className="qr-modal-buttons">
-              <button className="qr-modal-button qr-modal-close-btn" onClick={onClose}>
-                Close
-              </button>
               <button className="qr-modal-button qr-modal-download-btn" onClick={handleDownload}>
                 Download
               </button>
               <button className="qr-modal-button qr-modal-print-btn" onClick={handlePrint}>
                 Print
+              </button>
+              <button className="qr-modal-button qr-modal-close-btn" onClick={onClose}>
+                Close
               </button>
             </div>
           </>

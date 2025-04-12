@@ -10,6 +10,7 @@ const ProfileDropdown = ({ updateLoginState }) => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false); // Track notification dropdown visibility
   const [userName, setUserName] = useState(""); // State to store user's name
   const [notifications, setNotifications] = useState([]); // State to store notifications
+  const [unreadCount, setUnreadCount] = useState(0); // State to track unread notifications count
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null); // Ref for notification dropdown
   // Add this inside useEffect to get userId from cookies or Supabase
@@ -53,6 +54,37 @@ const ProfileDropdown = ({ updateLoginState }) => {
 
     fetchUserName();
   }, []); // Empty dependency array ensures this runs once on mount/unmount
+
+  // Fetch unread notifications count when userId changes
+  useEffect(() => {
+    const fetchUnreadNotificationsCount = async () => {
+      if (!userId) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("notificationId")
+          .eq("recipientId", userId)
+          .eq("isRead", false);
+          
+        if (error) {
+          console.error("Error fetching unread notifications count:", error);
+          return;
+        }
+        
+        setUnreadCount(data.length);
+      } catch (error) {
+        console.error("Unexpected error fetching unread notifications:", error);
+      }
+    };
+    
+    fetchUnreadNotificationsCount();
+    
+    // Set up a periodic refresh of the unread count (every 30 seconds)
+    const intervalId = setInterval(fetchUnreadNotificationsCount, 30000);
+    
+    return () => clearInterval(intervalId);
+  }, [userId]);
 
   // Function to handle logout
   const handleLogout = async () => {
@@ -109,6 +141,9 @@ const ProfileDropdown = ({ updateLoginState }) => {
 
           if (updateError) {
             console.error("Error marking notifications as read:", updateError);
+          } else {
+            // If successfully marked as read, update the unread count to zero
+            setUnreadCount(0);
           }
         }
       }
@@ -141,14 +176,19 @@ const ProfileDropdown = ({ updateLoginState }) => {
 
   return (
     <div className="profile-container" ref={dropdownRef}>
-      {/* Notification Button */}
-      <button
-        className="notification-button"
-        aria-label="Notifications"
-        onClick={handleNotificationClick}
-      >
-        <Bell color="#6b7280" />
-      </button>
+      {/* Notification Button with Badge */}
+      <div className="notification-wrapper">
+        <button
+          className="notification-button"
+          aria-label="Notifications"
+          onClick={handleNotificationClick}
+        >
+          <Bell color="#6b7280" />
+        </button>
+        {unreadCount > 0 && (
+          <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+        )}
+      </div>
 
       {/* Profile Dropdown Button */}
       <button

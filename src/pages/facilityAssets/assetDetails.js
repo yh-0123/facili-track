@@ -33,6 +33,17 @@ const AssetDetails = () => {
     return true;
   };
 
+  // Helper function to determine if Green Technology section should be shown
+  const shouldShowGreenTechInfo = () => {
+    return asset?.isGreenTech && userRole !== userRolesEnum.FACILITY_WORKER && 
+           userRole !== userRolesEnum.RESIDENT && isLoggedIn;
+  };
+
+  // Helper function to determine if Category-Specific Details should be shown
+  const shouldShowCategoryDetails = () => {
+    return categoryData && userRole !== userRolesEnum.RESIDENT && isLoggedIn;
+  };
+
   useEffect(() => {
     // Check user authentication status from cookies
     const userData = Cookies.get("userData");
@@ -492,8 +503,8 @@ const AssetDetails = () => {
             </p>
           </div>
 
-          {/* Green Technology Information - Only show if it's a green tech asset */}
-          {asset.isGreenTech && (
+          {/* Green Technology Information - Only show if it's a green tech asset AND user is not facility worker or resident */}
+          {shouldShowGreenTechInfo() && (
             <>
               <h3>Green Technology Information</h3>
               <div className="details-grid">
@@ -568,8 +579,8 @@ const AssetDetails = () => {
             </>
           )}
 
-          {/* Category-Specific Information */}
-          {categoryData && (
+          {/* Category-Specific Information - Only show if user is not a resident and is logged in */}
+          {shouldShowCategoryDetails() && (
             <>
               <h3>Category-Specific Details</h3>
               <div className="details-grid">

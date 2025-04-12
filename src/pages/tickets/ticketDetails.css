@@ -16,8 +16,6 @@
 
 }
 
-
-
 .ticket-header p{
   text-align: center;
   font-size: 18px;
@@ -73,8 +71,6 @@
 .ticket-updates {
   flex: 1;
   margin: 15px;
-  max-height: 480px;
-  overflow-y: auto;
 }
 
 .ticket-updates p {
@@ -130,22 +126,85 @@
   background-color: #C15E48;
 }
 
-.attachment-box {
-  width: 100%;
-  height: 100px;
-  background: #f7f7f7;
-  text-align: center;
+
+/* File attachment styling */
+.file-attachment {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  padding:10px 0px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
 }
+
+.file-icon {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.file-link {
+  color: #4285f4;
+  text-decoration: none;
+  margin-bottom: 10px;
+  word-break: break-all;
+  text-align: center;
+}
+
+.file-link:hover {
+  text-decoration: underline;
+}
+
+.file-actions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.download-btn {
+  background-color: #4285f4;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.download-btn:hover {
+  background-color: #3367d6;
+}
+
+/* Video container */
+.video-container {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.video-container video {
+  width: 100%;
+  max-height: 250px;
+  border-radius: 5px;
+}
+
+/* Audio container */
+.audio-container {
+  width: 100%;
+  padding: 10px;
+  background-color: #f1f3f4;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.audio-container audio {
+  width: 100%;
+}
+
+
 
 .attachment-box img {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 6px;
+  border-radius: 5px;
 }
 
 .ticket-actions {
@@ -221,12 +280,99 @@
 }
 
 .location-map {
-  margin: 10px 0 20px 0;
+  margin: 0px 0 20px 0;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  background-color: none;
+  
 }
 
+.get-directions-btn {
+  margin-top: 10px;
+  background-color: #e48a74;
+  border: none;
+  padding: 8px 12px;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.get-directions-btn:hover {
+  background-color: #d48568;
+}
+
+/* Add these styles to your ticketDetails.css file */
+
+.time-status {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  margin-left: 10px;
+}
+
+.time-status.resolved {
+  background-color: #4caf50;
+  color: white;
+}
+
+.time-status.overdue {
+  background-color: #f44336;
+  color: white;
+}
+
+.time-status.due-today {
+  background-color: #ff9800;
+  color: white;
+}
+
+.time-status.due-soon {
+  background-color: #ffeb3b;
+  color: #333;
+}
+
+.time-status.on-track {
+  background-color: #2196f3;
+  color: white;
+}
+
+.overdue-text {
+  color: #f44336;
+  font-weight: bold;
+}
+
+.form1-group {
+  margin-bottom: 15px;
+}
+
+.form1-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.form1-group input[type="number"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.form1-group small {
+  display: block;
+  color: #666;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.due-date-preview {
+  background-color: #f0f0f0;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
 
 @media (max-width: 414px) {
   .ticket-details-page{

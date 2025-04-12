@@ -48,7 +48,7 @@
   /* Button group container */
   .qr-modal-buttons {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 8px;
   }
   
@@ -72,24 +72,23 @@
   
   /* Generate QR Code button style */
   .qr-modal-generate-btn {
-    background-color: #2563eb;
+    background-color: #d46a4f;
     color: white;
   }
   
   .qr-modal-generate-btn:hover {
-    background-color: #1d4ed8;
+    background-color: #c15e48;
   }
   
   /* Download and print button styles */
-  .qr-modal-download-btn,
-  .qr-modal-print-btn {
-    background-color: #16a34a;
+  .qr-modal-download-btn {
+    background-color: #017575;
     color: white;
   }
   
-  .qr-modal-download-btn:hover,
-  .qr-modal-print-btn:hover {
-    background-color: #15803d;
+  .qr-modal-download-btn:hover
+  {
+    background-color: #4FD1C5;
   }
   
   /* Close button style */
@@ -103,11 +102,11 @@
   }
   
   .qr-modal-print-btn {
-    background-color: #2563eb;
+    background-color: #d46a4f;
     color: white;
   }
   
   .qr-modal-print-btn:hover {
-    background-color: #1d4ed8;
+    background-color: #c15e48;
   }
   
