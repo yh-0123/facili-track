@@ -1,88 +1,55 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, User, Bell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import supabase from "../../backend/DBClient/SupaBaseClient"; // Import Supabase client
-import Cookies from "js-cookie"; // Import js-cookie for managing cookies
+import { useSelector, useDispatch } from "react-redux";
+import { logoutUser } from "../../redux/actions/authActions";
+import supabase from "../../backend/DBClient/SupaBaseClient";
 import "./profileDropdown.css";
 
-const ProfileDropdown = ({ updateLoginState }) => {
+const ProfileDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false); // Track notification dropdown visibility
-  const [userName, setUserName] = useState(""); // State to store user's name
-  const [notifications, setNotifications] = useState([]); // State to store notifications
-  const [unreadCount, setUnreadCount] = useState(0); // State to track unread notifications count
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef(null);
-  const notificationRef = useRef(null); // Ref for notification dropdown
-  // Add this inside useEffect to get userId from cookies or Supabase
-  const [userId, setUserId] = useState("");
+  const notificationRef = useRef(null);
+
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  // Fetch user data from Supabase
-  useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const userData = Cookies.get("userData");
-        if (userData) {
-          let userInfo;
-          try {
-            userInfo = JSON.parse(userData);
-            // Set the userId from cookie
-            setUserId(userInfo.userId);
-          } catch (parseError) {
-            console.error("Error parsing userData:", parseError);
-            setUserName("Unknown User");
-            return;
-          }
-          const { data, error } = await supabase
-            .from("users")
-            .select("*")
-            .eq("userId", userInfo.userId)
-            .single();
-
-          if (data) {
-            setUserName(data.userName);
-          } else if (error) {
-            console.error("Error fetching userName:", error);
-            setUserName("Unknown User"); // Fallback to "User" if no data is found
-          }
-        }
-      } catch (error) {
-        console.error("Unexpected error:", error);
-        setUserName("Unknown User"); // Fallback to "User" on unexpected errors
-      }
-    };
-
-    fetchUserName();
-  }, []); // Empty dependency array ensures this runs once on mount/unmount
+  // Get user data from Redux store
+  const { userData } = useSelector((state) => state.auth);
+  const userId = userData?.userId;
+  const userName = userData?.userName || "Unknown User";
 
   // Fetch unread notifications count when userId changes
   useEffect(() => {
     const fetchUnreadNotificationsCount = async () => {
       if (!userId) return;
-      
+
       try {
         const { data, error } = await supabase
           .from("notifications")
           .select("notificationId")
           .eq("recipientId", userId)
           .eq("isRead", false);
-          
+
         if (error) {
           console.error("Error fetching unread notifications count:", error);
           return;
         }
-        
+
         setUnreadCount(data.length);
       } catch (error) {
         console.error("Unexpected error fetching unread notifications:", error);
       }
     };
-    
+
     fetchUnreadNotificationsCount();
-    
+
     // Set up a periodic refresh of the unread count (every 30 seconds)
     const intervalId = setInterval(fetchUnreadNotificationsCount, 30000);
-    
+
     return () => clearInterval(intervalId);
   }, [userId]);
 
@@ -90,12 +57,9 @@ const ProfileDropdown = ({ updateLoginState }) => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut(); // Sign out from Supabase Auth
-      Cookies.remove("userData"); // Remove user cookie
 
-      // Call the updateLoginState function passed from App.js
-      if (updateLoginState) {
-        updateLoginState(false);
-      }
+      // Dispatch logout action to Redux
+      dispatch(logoutUser());
 
       navigate("/login"); // Redirect to login page
     } catch (error) {
@@ -103,7 +67,7 @@ const ProfileDropdown = ({ updateLoginState }) => {
     }
   };
 
-  // Expand the notification fetching to include ticket information
+  // Handle notification click to fetch and display notifications
   const handleNotificationClick = async () => {
     setIsNotificationOpen(!isNotificationOpen);
 
@@ -128,16 +92,16 @@ const ProfileDropdown = ({ updateLoginState }) => {
       } else {
         setNotifications(data);
 
-        // Fix: Only update if there are unread notifications
+        // Only update if there are unread notifications
         const unreadNotifications = data
           .filter((n) => !n.isRead)
-          .map((n) => n.notificationId); // Change from n.id to n.notificationId
+          .map((n) => n.notificationId);
 
         if (unreadNotifications.length > 0) {
           const { error: updateError } = await supabase
             .from("notifications")
             .update({ isRead: true })
-            .in("notificationId", unreadNotifications); // Change from 'id' to 'notificationId'
+            .in("notificationId", unreadNotifications);
 
           if (updateError) {
             console.error("Error marking notifications as read:", updateError);
@@ -150,14 +114,13 @@ const ProfileDropdown = ({ updateLoginState }) => {
     }
   };
 
-  // Close dropdown if clicked outside (handles both profile and notification dropdowns)
+  // Close dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
 
-      // Close notification dropdown if clicked outside
       if (
         notificationRef.current &&
         !notificationRef.current.contains(event.target)
@@ -168,11 +131,10 @@ const ProfileDropdown = ({ updateLoginState }) => {
 
     document.addEventListener("mousedown", handleClickOutside);
 
-    // Clean up the event listener when component unmounts
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []); // Empty dependency array ensures this runs once on mount/unmount
+  }, []);
 
   return (
     <div className="profile-container" ref={dropdownRef}>
@@ -186,7 +148,9 @@ const ProfileDropdown = ({ updateLoginState }) => {
           <Bell color="#6b7280" />
         </button>
         {unreadCount > 0 && (
-          <span className="notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+          <span className="notification-badge">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
         )}
       </div>
 
@@ -199,9 +163,7 @@ const ProfileDropdown = ({ updateLoginState }) => {
         <div className="profile-icon">
           <User size={20} color="#6b7280" />
         </div>
-        <span className="profile-name">
-          {userName ? userName : "Loading..."}
-        </span>
+        <span className="profile-name">{userName}</span>
         <ChevronDown size={18} className="chevron-icon" />
       </button>
 
@@ -215,19 +177,24 @@ const ProfileDropdown = ({ updateLoginState }) => {
             <ul>
               {notifications.map((notification) => (
                 <li
-                  key={notification.notificationId} // Fix: Changed from id to notificationId
+                  key={notification.notificationId}
                   className={`notification-item ${
                     notification.isRead ? "" : "unread"
                   }`}
                   onClick={() => {
                     if (notification.ticketId) {
-                      navigate(`/ticket/${notification.ticketId}`);
+                      navigate(`/tickets/${notification.ticketId}`, {
+                        state: {
+                          fromNotification: true,
+                          ticketDetails: notification.tickets,
+                          timestamp: new Date().getTime(),
+                        },
+                      });
                       setIsNotificationOpen(false);
                     }
                   }}
                 >
-                  <p>{notification.notificationMessage}</p>{" "}
-                  {/* Fix: Changed from message to notificationMessage */}
+                  <p>{notification.notificationMessage}</p>
                   <small>
                     {new Date(notification.createdAt).toLocaleString()}
                   </small>
@@ -250,9 +217,6 @@ const ProfileDropdown = ({ updateLoginState }) => {
           >
             Logout
           </button>
-          {/* <button className="dropdown-item deactivate" role="menuitem">
-            Deactivate Account
-          </button> */}
         </div>
       )}
     </div>

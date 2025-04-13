@@ -73,13 +73,13 @@ button {
 /* Back Button */
 .cancel-btn,
 .back-btn {
-  background: #E8A897;
+  background: #6c757d;
   color: white;
 }
 
 .cancel-btn:hover,
 .back-btn:hover {
-  background: #C15E48;
+  background: #5a6268;
 }
 
 /* Edit Button */
@@ -133,4 +133,57 @@ button {
     overflow-y: auto; /* Enable vertical scrolling when content overflows */
   }
   
+}
+
+@media (max-width: 420px) {
+  .asset-details-page {
+    display: flex;
+    justify-content: center;
+    height:100%;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 20px;
+  }
+
+  .asset-details-page .content {
+    padding: 20px 10px;
+    padding-top: 40px;
+  }
+
+  .asset-details {
+    padding: 15px;
+    max-height: 590px; /* Allow it to grow with content */
+    overflow-y: auto; /* Enable vertical scrolling when content overflows */
+    box-shadow: none; /* Optional: reduce visual noise on mobile */
+    border-radius: 0px;
+  }
+
+  .asset-details h3 {
+    font-size: 1rem;
+    padding: 8px;
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr; /* Stack items vertically */
+    gap: 15px;
+  }
+
+  .details-grid p {
+    font-size: 0.95rem;
+  }
+
+  .button-group {
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  button {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .loading-text,
+  .not-found-text {
+    font-size: 1rem;
+  }
 }

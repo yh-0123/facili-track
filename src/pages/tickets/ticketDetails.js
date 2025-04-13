@@ -8,31 +8,98 @@ import Cookies from "js-cookie";
 import { sendNotification, notifyTicketUpdate } from "./notificationService";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import "./ticketDetails.css";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchTicketSuccess,
+  fetchTicketNotesSuccess,
+  updateTicketStatus,
+  updateTicketNotes,
+  setAssignedWorker,
+  setSubmittedBy,
+  setWorkersList,
+  setTicketDueDate,
+  setAssignmentDate,
+  setIsOverdue,
+  setMapCenter,
+  setAttachmentType,
+  assignTicket,
+  resolveTicket,
+  addNote,
+} from "../../redux/actions/ticketActions";
 
 const TicketDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { ticket } = location.state || {};
-  const [submittedBy, setSubmittedBy] = useState("");
-  const [assignedWorkerName, setAssignedWorkerName] = useState("Not Assigned");
-  const [ticketStatus, setTicketStatus] = useState(ticket?.ticketStatus || "");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTicketData = async () => {
+      // If we don't have ticket data from location state, fetch it from URL
+      if (!ticket) {
+        const ticketId = window.location.pathname.split("/").pop();
+        if (ticketId) {
+          try {
+            const { data, error } = await supabase
+              .from("ticket")
+              .select("*")
+              .eq("ticketId", ticketId)
+              .single();
+
+            if (error) {
+              console.error("Error fetching ticket:", error);
+              navigate("/tickets");
+              return;
+            }
+
+            if (data) {
+              dispatch(fetchTicketSuccess(data));
+              // Update location state with the fetched ticket
+              navigate(`/tickets/${ticketId}`, {
+                state: { ticket: data },
+                replace: true,
+              });
+            }
+          } catch (error) {
+            console.error("Error:", error);
+            navigate("/tickets");
+          }
+        }
+      }
+      setLoading(false);
+    };
+
+    fetchTicketData();
+  }, [dispatch, navigate, ticket]);
+
+  // Get states from Redux instead of local state
+  const submittedBy = useSelector((state) => state.ticket.submittedBy);
+  const assignedWorkerName = useSelector(
+    (state) => state.ticket.assignedWorkerName
+  );
+  const ticketStatus = useSelector(
+    (state) => state.ticket.ticketStatus || ticket?.ticketStatus
+  );
+  const workers = useSelector((state) => state.ticket.workers || []);
+  const currentUser = useSelector((state) => state.auth.userData);
+  const ticketNotes = useSelector((state) => state.ticket.ticketNotes || []);
+  const updatedBy = useSelector(
+    (state) => state.ticket.updatedBy || ticket?.updatedBy || "N/A"
+  );
+  const mapCenter = useSelector((state) => state.ticket.mapCenter);
+  const ticketDueDate = useSelector((state) => state.ticket.ticketDueDate);
+  const assignmentDate = useSelector((state) => state.ticket.assignmentDate);
+  const isOverdue = useSelector((state) => state.ticket.isOverdue);
+  const attachmentType = useSelector((state) => state.ticket.attachmentType);
+
+  // Keep some UI-related states local since they don't need to be in Redux
   const [showModal, setShowModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const [workers, setWorkers] = useState([]);
   const [selectedWorker, setSelectedWorker] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
-  const [ticketNotes, setTicketNotes] = useState([]);
-  const [updatedBy, setUpdatedBy] = useState(ticket?.updatedBy || "N/A");
-  const [mapCenter, setMapCenter] = useState(null);
-  // New state variables for due date functionality
   const [resolutionDuration, setResolutionDuration] = useState(7); // Default to 7 days
-  const [ticketDueDate, setTicketDueDate] = useState(null);
-  const [assignmentDate, setAssignmentDate] = useState(null);
-  const [isOverdue, setIsOverdue] = useState(false);
-  const [attachmentType, setAttachmentType] = useState(null);
 
   // Map container style
   const mapContainerStyle = {
@@ -56,7 +123,7 @@ const TicketDetails = () => {
               .split(",")
               .map((coord) => parseFloat(coord.trim()));
             if (!isNaN(lat) && !isNaN(lng)) {
-              setMapCenter({ lat, lng });
+              dispatch(setMapCenter({ lat, lng }));
             }
           }
           // If it might be JSON, try to parse it
@@ -67,10 +134,12 @@ const TicketDetails = () => {
             try {
               const locationObj = JSON.parse(ticket.locationCoordinates);
               if (locationObj.lat && locationObj.lng) {
-                setMapCenter({
-                  lat: parseFloat(locationObj.lat),
-                  lng: parseFloat(locationObj.lng),
-                });
+                dispatch(
+                  setMapCenter({
+                    lat: parseFloat(locationObj.lat),
+                    lng: parseFloat(locationObj.lng),
+                  })
+                );
               }
             } catch (jsonError) {
               // If it's not valid JSON, just treat it as a text location
@@ -90,60 +159,80 @@ const TicketDetails = () => {
           ticket.locationCoordinates.lat &&
           ticket.locationCoordinates.lng
         ) {
-          setMapCenter({
-            lat: parseFloat(ticket.locationCoordinates.lat),
-            lng: parseFloat(ticket.locationCoordinates.lng),
-          });
+          dispatch(
+            setMapCenter({
+              lat: parseFloat(ticket.locationCoordinates.lat),
+              lng: parseFloat(ticket.locationCoordinates.lng),
+            })
+          );
         }
       } catch (error) {
         console.error("Error parsing location data:", error);
       }
     }
-  }, [ticket?.locationCoordinates]);
+  }, [ticket?.locationCoordinates, dispatch]);
 
-   // Determine attachment file type
-   useEffect(() => {
+  // Determine attachment file type
+  useEffect(() => {
     if (ticket?.ticketAttachment) {
       // Function to determine file type from URL or file extension
       const determineFileType = (url) => {
         if (!url) return null;
-        
+
         // Make sure url is a string before using split
         const urlString = String(url);
-        
+
         // Try to extract file extension from URL
         try {
-          const fileExtension = urlString.split('.').pop().toLowerCase();
-          
+          const fileExtension = urlString.split(".").pop().toLowerCase();
+
           // Check for image types
-          if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(fileExtension)) {
-            return 'image';
+          if (
+            ["jpg", "jpeg", "png", "gif", "bmp", "webp", "svg"].includes(
+              fileExtension
+            )
+          ) {
+            return "image";
           }
           // Check for document types
-          else if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(fileExtension)) {
-            return 'document';
+          else if (
+            [
+              "pdf",
+              "doc",
+              "docx",
+              "xls",
+              "xlsx",
+              "ppt",
+              "pptx",
+              "txt",
+            ].includes(fileExtension)
+          ) {
+            return "document";
           }
           // Check for video types
-          else if (['mp4', 'webm', 'ogg', 'mov', 'avi', 'wmv'].includes(fileExtension)) {
-            return 'video';
+          else if (
+            ["mp4", "webm", "ogg", "mov", "avi", "wmv"].includes(fileExtension)
+          ) {
+            return "video";
           }
           // Check for audio types
-          else if (['mp3', 'wav', 'ogg', 'aac', 'flac'].includes(fileExtension)) {
-            return 'audio';
+          else if (
+            ["mp3", "wav", "ogg", "aac", "flac"].includes(fileExtension)
+          ) {
+            return "audio";
           }
           // If we can't determine, use a generic file type
           else {
-            return 'other';
+            return "other";
           }
         } catch (error) {
           console.error("Error determining file type:", error);
-          return 'other'; // Default to other if there's an error
+          return "other"; // Default to other if there's an error
         }
       };
-      setAttachmentType(determineFileType(ticket.ticketAttachment));
+      dispatch(setAttachmentType(determineFileType(ticket.ticketAttachment)));
     }
-  }, [ticket?.ticketAttachment]);
-
+  }, [ticket?.ticketAttachment, dispatch]);
 
   // Helper function to sort notes chronologically
   const sortNotesByTimestamp = (notes) => {
@@ -171,8 +260,12 @@ const TicketDetails = () => {
     if (!ticket?.assignedWorkerId || !isOverdue) return;
 
     const reminderMessage = `REMINDER: Ticket #${ticket.ticketId}: ${ticket.ticketTitle} is overdue. Please resolve it as soon as possible.`;
-    await sendNotification(ticket.assignedWorkerId, reminderMessage, ticket.ticketId);
-    
+    await sendNotification(
+      ticket.assignedWorkerId,
+      reminderMessage,
+      ticket.ticketId
+    );
+
     // Add a note about the reminder
     const reminderNote = {
       note: "Automatic reminder sent - ticket is overdue",
@@ -189,8 +282,8 @@ const TicketDetails = () => {
       })
       .eq("ticketId", ticket.ticketId);
 
-    // Update local state
-    setTicketNotes(updatedNotes);
+    // Update state through Redux
+    dispatch(updateTicketNotes(updatedNotes));
   };
 
   useEffect(() => {
@@ -200,7 +293,6 @@ const TicketDetails = () => {
         const userData = Cookies.get("userData");
         if (userData) {
           const user = JSON.parse(userData);
-          setCurrentUser(user);
           return user;
         }
         return null;
@@ -224,19 +316,21 @@ const TicketDetails = () => {
       }
 
       // Facility worker can view tickets assigned to them
-      if (user.userRole === userRolesEnum.FACILITY_WORKER) {
-        if (ticketData.assignedWorkerId === user.userId) {
-          setAuthorized(true);
-          return true;
-        }
+      if (
+        user.userRole === userRolesEnum.FACILITY_WORKER &&
+        ticketData.assignedWorkerId === user.userId
+      ) {
+        setAuthorized(true);
+        return true;
       }
 
       // Resident can view tickets they submitted
-      if (user.userRole === userRolesEnum.RESIDENT) {
-        if (ticketData.reportedResidentId === user.userId) {
-          setAuthorized(true);
-          return true;
-        }
+      if (
+        user.userRole === userRolesEnum.RESIDENT &&
+        ticketData.reportedResidentId === user.userId
+      ) {
+        setAuthorized(true);
+        return true;
       }
 
       setAuthorized(false);
@@ -266,15 +360,15 @@ const TicketDetails = () => {
 
         if (!error) {
           ticketData = data;
-          
+
           // Set due date and assignment date if available
           if (data.ticketDue) {
-            setTicketDueDate(data.ticketDue);
-            setIsOverdue(checkIfOverdue(data.ticketDue));
+            dispatch(setTicketDueDate(data.ticketDue));
+            dispatch(setIsOverdue(checkIfOverdue(data.ticketDue)));
           }
-          
+
           if (data.assignmentDate) {
-            setAssignmentDate(data.assignmentDate);
+            dispatch(setAssignmentDate(data.assignmentDate));
           }
         }
       }
@@ -292,7 +386,7 @@ const TicketDetails = () => {
     };
 
     initializeComponent();
-  }, [ticket, navigate]);
+  }, [ticket, navigate, dispatch]);
 
   // Check for overdue tickets and send reminders if needed
   useEffect(() => {
@@ -304,6 +398,7 @@ const TicketDetails = () => {
     }
   }, [isOverdue, ticket?.ticketStatus]);
 
+  // Fetch submitter's name
   useEffect(() => {
     const fetchUserName = async () => {
       if (ticket?.reportedResidentId) {
@@ -315,9 +410,9 @@ const TicketDetails = () => {
 
         if (error) {
           console.error("Error fetching user:", error);
-          setSubmittedBy("Unknown");
+          dispatch(setSubmittedBy("Unknown"));
         } else {
-          setSubmittedBy(data?.userName || "Unknown");
+          dispatch(setSubmittedBy(data?.userName || "Unknown"));
         }
       }
     };
@@ -325,7 +420,7 @@ const TicketDetails = () => {
     if (authorized) {
       fetchUserName();
     }
-  }, [ticket?.reportedResidentId, authorized]);
+  }, [ticket?.reportedResidentId, authorized, dispatch]);
 
   // Fetch assigned worker's name
   useEffect(() => {
@@ -340,7 +435,12 @@ const TicketDetails = () => {
         if (error) {
           console.error("Error fetching assigned worker:", error);
         } else {
-          setAssignedWorkerName(data?.userName || "Unknown");
+          dispatch(
+            setAssignedWorker({
+              workerId: ticket.assignedWorkerId,
+              workerName: data?.userName || "Unknown",
+            })
+          );
         }
       }
     };
@@ -348,7 +448,7 @@ const TicketDetails = () => {
     if (authorized && ticket?.assignedWorkerId) {
       fetchAssignedWorker();
     }
-  }, [ticket?.assignedWorkerId, authorized]);
+  }, [ticket?.assignedWorkerId, authorized, dispatch]);
 
   // Fetch facility workers
   useEffect(() => {
@@ -362,12 +462,12 @@ const TicketDetails = () => {
       if (error) {
         console.error("Error fetching workers:", error);
       } else {
-        setWorkers(data);
+        dispatch(setWorkersList(data));
       }
     };
 
     fetchWorkers();
-  }, [authorized, currentUser]);
+  }, [authorized, currentUser, dispatch]);
 
   // Fetch ticket notes
   useEffect(() => {
@@ -389,12 +489,12 @@ const TicketDetails = () => {
 
         // Set ticketDue and assignmentDate if available
         if (ticketData?.ticketDue) {
-          setTicketDueDate(ticketData.ticketDue);
-          setIsOverdue(checkIfOverdue(ticketData.ticketDue));
+          dispatch(setTicketDueDate(ticketData.ticketDue));
+          dispatch(setIsOverdue(checkIfOverdue(ticketData.ticketDue)));
         }
-        
+
         if (ticketData?.assignmentDate) {
-          setAssignmentDate(ticketData.assignmentDate);
+          dispatch(setAssignmentDate(ticketData.assignmentDate));
         }
 
         // If updateNotes exists, process it properly
@@ -407,110 +507,136 @@ const TicketDetails = () => {
 
               // If it's an array, use it directly
               if (Array.isArray(parsedNotes)) {
-                setTicketNotes(sortNotesByTimestamp(parsedNotes));
+                dispatch(
+                  fetchTicketNotesSuccess(sortNotesByTimestamp(parsedNotes))
+                );
               }
               // If it parsed as an object but not an array, wrap it
               else if (typeof parsedNotes === "object") {
-                setTicketNotes(sortNotesByTimestamp([parsedNotes]));
+                dispatch(
+                  fetchTicketNotesSuccess(sortNotesByTimestamp([parsedNotes]))
+                );
               }
               // If it's neither array nor object, create a basic note
               else {
-                setTicketNotes([
+                dispatch(
+                  fetchTicketNotesSuccess([
+                    {
+                      note: String(ticketData.updateNotes),
+                      addedBy: ticket.updatedBy || "Unknown",
+                      timestamp:
+                        ticket.resolutionDate || new Date().toISOString(),
+                    },
+                  ])
+                );
+              }
+            } catch (parseError) {
+              // Handle invalid JSON by creating a fallback note
+              console.warn("Could not parse updateNotes as JSON:", parseError);
+              dispatch(
+                fetchTicketNotesSuccess([
                   {
                     note: String(ticketData.updateNotes),
                     addedBy: ticket.updatedBy || "Unknown",
                     timestamp:
                       ticket.resolutionDate || new Date().toISOString(),
                   },
-                ]);
-              }
-            } catch (parseError) {
-              // Handle invalid JSON by creating a fallback note
-              console.warn("Could not parse updateNotes as JSON:", parseError);
-              setTicketNotes([
-                {
-                  note: String(ticketData.updateNotes),
-                  addedBy: ticket.updatedBy || "Unknown",
-                  timestamp: ticket.resolutionDate || new Date().toISOString(),
-                },
-              ]);
+                ])
+              );
             }
           }
           // Handle object-based notes (stored directly as object/array in database)
           else if (typeof ticketData.updateNotes === "object") {
             if (Array.isArray(ticketData.updateNotes)) {
-              setTicketNotes(sortNotesByTimestamp(ticketData.updateNotes));
+              dispatch(
+                fetchTicketNotesSuccess(
+                  sortNotesByTimestamp(ticketData.updateNotes)
+                )
+              );
             } else {
-              setTicketNotes(sortNotesByTimestamp([ticketData.updateNotes]));
+              dispatch(
+                fetchTicketNotesSuccess(
+                  sortNotesByTimestamp([ticketData.updateNotes])
+                )
+              );
             }
           }
           // Fallback for any other unexpected format
           else {
-            setTicketNotes([
-              {
-                note: String(ticketData.updateNotes),
-                addedBy: ticket.updatedBy || "Unknown",
-                timestamp: ticket.resolutionDate || new Date().toISOString(),
-              },
-            ]);
+            dispatch(
+              fetchTicketNotesSuccess([
+                {
+                  note: String(ticketData.updateNotes),
+                  addedBy: ticket.updatedBy || "Unknown",
+                  timestamp: ticket.resolutionDate || new Date().toISOString(),
+                },
+              ])
+            );
           }
         } else {
           // No notes found
-          setTicketNotes([]);
+          dispatch(fetchTicketNotesSuccess([]));
         }
       } catch (error) {
         console.error("Error processing ticket notes:", error);
-        setTicketNotes([]);
+        dispatch(fetchTicketNotesSuccess([]));
       }
     };
 
     if (authorized) {
       fetchTicketNotes();
     }
-  }, [ticket?.ticketId, authorized]);
+  }, [ticket?.ticketId, authorized, dispatch]);
 
   // Assign Ticket
   const handleAssignTicket = async () => {
     if (!ticket?.ticketId || !selectedWorker) return;
-  
+
     // Validate user data
     if (!currentUser?.userName) {
       console.error("Cannot assign ticket: User information missing");
       alert("You must be logged in to assign tickets");
       return;
     }
-  
+
     // Validate resolution duration
     if (resolutionDuration < 1 || resolutionDuration > 30) {
       alert("Resolution duration must be between 1 and 30 days");
       return;
     }
-  
+
     try {
       // Set assignment date to current date
       const currentDate = new Date().toISOString();
-      const dueDate = calculateDueDate(currentDate, resolutionDuration).toISOString();
-  
+      const dueDate = calculateDueDate(
+        currentDate,
+        resolutionDuration
+      ).toISOString();
+
       // Create a new note for this assignment
       const newNote = {
-        note: `Ticket assigned to ${selectedWorker.userName} with ${resolutionDuration} day(s) to resolve (due by: ${new Date(dueDate).toLocaleDateString()})`,
+        note: `Ticket assigned to ${
+          selectedWorker.userName
+        } with ${resolutionDuration} day(s) to resolve (due by: ${new Date(
+          dueDate
+        ).toLocaleDateString()})`,
         addedBy: currentUser.userName,
         timestamp: currentDate,
       };
-  
+
       // Get existing notes to ensure we have the latest
       const { data: currentTicket, error: fetchError } = await supabase
         .from("ticket")
         .select("updateNotes")
         .eq("ticketId", ticket.ticketId)
         .single();
-  
+
       if (fetchError) {
         console.error("Error fetching current ticket notes:", fetchError);
         alert("Failed to fetch current ticket data. Please try again.");
         return;
       }
-  
+
       // Parse existing notes or initialize as empty array
       let existingNotes = [];
       if (currentTicket?.updateNotes) {
@@ -528,30 +654,46 @@ const TicketDetails = () => {
           existingNotes = [];
         }
       }
-  
+
       // Combine existing notes with the new note
       const updatedNotes = sortNotesByTimestamp([...existingNotes, newNote]);
-  
-      // Ensure the ticketId is in the correct format 
+
+      // Ensure the ticketId is in the correct format
       // (convert to integer if it's a number in the database)
-      const ticketIdForQuery = typeof ticket.ticketId === 'string' && !isNaN(parseInt(ticket.ticketId)) 
-        ? parseInt(ticket.ticketId) 
-        : ticket.ticketId;
-  
+      const ticketIdForQuery =
+        typeof ticket.ticketId === "string" && !isNaN(parseInt(ticket.ticketId))
+          ? parseInt(ticket.ticketId)
+          : ticket.ticketId;
+
       // Ensure workerId is in the correct format
-      const workerIdForUpdate = typeof selectedWorker.userId === 'string' && !isNaN(parseInt(selectedWorker.userId))
-        ? parseInt(selectedWorker.userId)
-        : selectedWorker.userId;
-  
+      const workerIdForUpdate =
+        typeof selectedWorker.userId === "string" &&
+        !isNaN(parseInt(selectedWorker.userId))
+          ? parseInt(selectedWorker.userId)
+          : selectedWorker.userId;
+
       console.log("Updating ticket with data:", {
         ticketId: ticketIdForQuery,
         workerId: workerIdForUpdate,
         notes: updatedNotes.length,
-        dueDate: dueDate
+        dueDate: dueDate,
       });
-  
+
+      // Dispatch the action to assign the ticket
+      dispatch(
+        assignTicket({
+          ticketId: ticketIdForQuery,
+          workerId: workerIdForUpdate,
+          workerName: selectedWorker.userName, // Make sure we're using the name string
+          notes: updatedNotes,
+          updatedBy: currentUser.userName,
+          assignmentDate: currentDate,
+          dueDate: dueDate,
+        })
+      );
+
       // Update the database
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("ticket")
         .update({
           assignedWorkerId: workerIdForUpdate,
@@ -559,37 +701,38 @@ const TicketDetails = () => {
           updateNotes: JSON.stringify(updatedNotes),
           updatedBy: currentUser.userName,
           assignmentDate: currentDate,
-          ticketDue: dueDate
+          ticketDue: dueDate,
         })
         .eq("ticketId", ticketIdForQuery);
-  
+
       if (error) {
         console.error("Error assigning ticket:", error);
         alert(`Failed to assign ticket: ${error.message}`);
         return;
       }
-  
+
       // If successful, update UI
       setShowModal(false);
-      setTicketStatus(TicketStatusEnum.ASSIGNED);
-      setTicketNotes(updatedNotes);
-      setAssignedWorkerName(selectedWorker.userName);
-      setAssignmentDate(currentDate);
-      setTicketDueDate(dueDate);
-      setUpdatedBy(currentUser.userName);
-  
+
       // Notify the assigned worker
       await sendNotification(
         selectedWorker.userId,
-        `You have been assigned to ticket #${ticket.ticketId}: ${ticket.ticketTitle}. Due in ${resolutionDuration} day(s) by ${new Date(dueDate).toLocaleDateString()}.`,
+        `You have been assigned to ticket #${ticket.ticketId}: ${
+          ticket.ticketTitle
+        }. Due in ${resolutionDuration} day(s) by ${new Date(
+          dueDate
+        ).toLocaleDateString()}.`,
         ticket.ticketId
       );
       await sendNotification(
         ticket.reportedResidentId,
-        `Your ticket #${ticket.ticketId} has been assigned to ${selectedWorker.userName} and is expected to be resolved by ${new Date(dueDate).toLocaleDateString()}.`,
+        `Your ticket #${ticket.ticketId} has been assigned to ${
+          selectedWorker.userName
+        } and is expected to be resolved by ${new Date(
+          dueDate
+        ).toLocaleDateString()}.`,
         ticket.ticketId
       );
-  
     } catch (exception) {
       console.error("Exception in handleAssignTicket:", exception);
       alert(`An unexpected error occurred: ${exception.message}`);
@@ -609,13 +752,15 @@ const TicketDetails = () => {
 
     const currentDate = new Date().toISOString();
     // Check if resolved within due date
-    const resolvedOnTime = ticketDueDate ? new Date(currentDate) <= new Date(ticketDueDate) : true;
-    
+    const resolvedOnTime = ticketDueDate
+      ? new Date(currentDate) <= new Date(ticketDueDate)
+      : true;
+
     // Create a new note for this resolution
-    const noteText = resolvedOnTime 
-      ? "Ticket marked as resolved on time" 
+    const noteText = resolvedOnTime
+      ? "Ticket marked as resolved on time"
       : "Ticket marked as resolved (past due date)";
-    
+
     const newNote = {
       note: noteText,
       addedBy: currentUser.userName,
@@ -625,15 +770,18 @@ const TicketDetails = () => {
     // Combine existing notes with the new note
     const updatedNotes = sortNotesByTimestamp([...ticketNotes, newNote]);
 
-    // Optimistically update UI
-    setTicketStatus(TicketStatusEnum.RESOLVED);
-    setTicketNotes(updatedNotes);
-    setIsOverdue(false); // Reset overdue state since ticket is now resolved
-
-    setUpdatedBy(currentUser.userName);
+    // Dispatch action to resolve ticket
+    dispatch(
+      resolveTicket({
+        ticketId: ticket.ticketId,
+        updatedBy: currentUser.userName,
+        resolutionDate: currentDate,
+        notes: updatedNotes,
+      })
+    );
 
     // Update the ticket status in the database
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("ticket")
       .update({
         ticketStatus: TicketStatusEnum.RESOLVED,
@@ -653,7 +801,7 @@ const TicketDetails = () => {
       const completionMessage = resolvedOnTime
         ? `Ticket #${ticket.ticketId}: ${ticket.ticketTitle} has been marked as resolved on time`
         : `Ticket #${ticket.ticketId}: ${ticket.ticketTitle} has been marked as resolved (past the due date)`;
-      
+
       await notifyTicketUpdate(
         ticket.ticketId,
         completionMessage,
@@ -710,6 +858,16 @@ const TicketDetails = () => {
       // Add new note to existing notes
       const updatedNotes = [...existingNotes, newNote];
 
+      // Dispatch action to add note
+      dispatch(
+        addNote({
+          ticketId: ticket.ticketId,
+          note: newNote,
+          notes: updatedNotes,
+          updatedBy: currentUser?.userName || "System",
+        })
+      );
+
       // Update with direct approach
       const { error: updateError } = await supabase
         .from("ticket")
@@ -738,11 +896,8 @@ const TicketDetails = () => {
       }
 
       // Update UI state
-      setTicketNotes(updatedNotes);
       setNoteText("");
       setShowNotesModal(false);
-
-      setUpdatedBy(currentUser?.userName || "System");
     } catch (e) {
       console.error("Exception in handleAddNote:", e);
       alert(`An error occurred: ${e.message}`);
@@ -806,15 +961,15 @@ const TicketDetails = () => {
   // Function to get file name from URL
   const getFileNameFromUrl = (url) => {
     if (!url) return "No file";
-    
+
     try {
       // Make sure url is a string
       const urlString = String(url);
-      const parts = urlString.split('/');
+      const parts = urlString.split("/");
       return parts[parts.length - 1];
     } catch (error) {
       console.error("Error getting file name:", error);
-      return "File";  // Return a generic name if there's an error
+      return "File"; // Return a generic name if there's an error
     }
   };
 
@@ -827,9 +982,9 @@ const TicketDetails = () => {
     const fileName = getFileNameFromUrl(ticket.ticketAttachment);
 
     switch (attachmentType) {
-      case 'image':
+      case "image":
         return <img src={ticket.ticketAttachment} alt="Attachment" />;
-      case 'video':
+      case "video":
         return (
           <div className="video-container">
             <video controls>
@@ -838,7 +993,7 @@ const TicketDetails = () => {
             </video>
           </div>
         );
-      case 'audio':
+      case "audio":
         return (
           <div className="audio-container">
             <audio controls>
@@ -847,24 +1002,24 @@ const TicketDetails = () => {
             </audio>
           </div>
         );
-      case 'document':
-      case 'other':
+      case "document":
+      case "other":
       default:
         return (
           <div className="file-attachment">
             <div className="file-icon">📎</div>
-            <a 
-              href={ticket.ticketAttachment} 
-              target="_blank" 
-              rel="noreferrer noopener" 
+            <a
+              href={ticket.ticketAttachment}
+              target="_blank"
+              rel="noreferrer noopener"
               className="file-link"
             >
               {fileName}
             </a>
             <div className="file-actions">
-              <a 
-                href={ticket.ticketAttachment} 
-                download 
+              <a
+                href={ticket.ticketAttachment}
+                download
                 className="download-btn"
               >
                 Download
@@ -907,31 +1062,43 @@ const TicketDetails = () => {
   // Calculate remaining days until due date
   const getRemainingDays = () => {
     if (!ticketDueDate) return null;
-    
+
     const now = new Date();
     const due = new Date(ticketDueDate);
     const diffTime = due - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     return diffDays;
   };
 
   // Get time status display
   const getTimeStatus = () => {
     if (!ticketDueDate) return null;
-    
+
     const remainingDays = getRemainingDays();
-    
+
     if (ticketStatus === TicketStatusEnum.RESOLVED) {
       return <span className="time-status resolved">Resolved</span>;
     } else if (remainingDays < 0) {
-      return <span className="time-status overdue">Overdue by {Math.abs(remainingDays)} day(s)</span>;
+      return (
+        <span className="time-status overdue">
+          Overdue by {Math.abs(remainingDays)} day(s)
+        </span>
+      );
     } else if (remainingDays === 0) {
       return <span className="time-status due-today">Due today</span>;
     } else if (remainingDays <= 2) {
-      return <span className="time-status due-soon">Due in {remainingDays} day(s)</span>;
+      return (
+        <span className="time-status due-soon">
+          Due in {remainingDays} day(s)
+        </span>
+      );
     } else {
-      return <span className="time-status on-track">Due in {remainingDays} days</span>;
+      return (
+        <span className="time-status on-track">
+          Due in {remainingDays} days
+        </span>
+      );
     }
   };
 
@@ -994,7 +1161,8 @@ const TicketDetails = () => {
               </div>
             )}
             <p>
-              <strong>Assigned To:</strong> <h5>{assignedWorkerName}</h5>
+              <strong>Assigned To:</strong>{" "}
+              <h5>{assignedWorkerName || "Not Assigned"}</h5>
             </p>
             {assignmentDate && (
               <p>
@@ -1005,7 +1173,13 @@ const TicketDetails = () => {
             {ticketDueDate && (
               <p>
                 <strong>Due Date:</strong>{" "}
-                <h5 className={isOverdue && ticketStatus !== TicketStatusEnum.RESOLVED ? "overdue-text" : ""}>
+                <h5
+                  className={
+                    isOverdue && ticketStatus !== TicketStatusEnum.RESOLVED
+                      ? "overdue-text"
+                      : ""
+                  }
+                >
                   {formatDate(ticketDueDate)}
                 </h5>
               </p>
@@ -1024,17 +1198,13 @@ const TicketDetails = () => {
               <strong>Attachment:</strong>
             </p>
             <div className="attachment-box">
-              {ticket.ticketAttachment ? (
-                renderAttachment()
-              ) : (
-                "(No Attachment)"
-              )}
+              {ticket.ticketAttachment ? renderAttachment() : "(No Attachment)"}
             </div>
             <p>
               <strong>Update Notes:</strong>
             </p>
             <div className="update-notes-container">
-            {ticketNotes.length > 0 ? (
+              {ticketNotes.length > 0 ? (
                 ticketNotes.map((note, index) => (
                   <div key={index} className="note-item">
                     <p className="note-meta">
@@ -1116,7 +1286,7 @@ const TicketDetails = () => {
                 ))}
               </select>
             </div>
-            
+
             <div className="form1-group">
               <label>Resolution Time (in days):</label>
               <input
@@ -1124,20 +1294,30 @@ const TicketDetails = () => {
                 min="1"
                 max="30"
                 value={resolutionDuration}
-                onChange={(e) => setResolutionDuration(parseInt(e.target.value, 10) || 1)}
+                onChange={(e) =>
+                  setResolutionDuration(parseInt(e.target.value, 10) || 1)
+                }
               />
               <small>Enter a number between 1 and 30 days</small>
             </div>
-            
+
             {resolutionDuration > 0 && (
               <p className="due-date-preview">
-                Expected due date: {formatDate(calculateDueDate(new Date(), resolutionDuration))}
+                Expected due date:{" "}
+                {formatDate(calculateDueDate(new Date(), resolutionDuration))}
               </p>
             )}
-            
+
             <div className="modal-buttons">
               <button onClick={() => setShowModal(false)}>Cancel</button>
-              <button onClick={handleAssignTicket} disabled={!selectedWorker || resolutionDuration < 1 || resolutionDuration > 30}>
+              <button
+                onClick={handleAssignTicket}
+                disabled={
+                  !selectedWorker ||
+                  resolutionDuration < 1 ||
+                  resolutionDuration > 30
+                }
+              >
                 Assign
               </button>
             </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import { useSelector } from "react-redux";
 import bcrypt from "bcryptjs"; // Import bcrypt for password comparison
 import supabase from "../../backend/DBClient/SupaBaseClient";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
@@ -11,12 +12,14 @@ const ViewProfile = () => {
   const [userEmail, setEmail] = useState("");
   const [userContact, setContact] = useState("");
   const [userHousingUnit, setHousingUnit] = useState("");
-  const [userRole, setUserRole] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [userId, setUserId] = useState(null);
   const [storedHashedPassword, setStoredHashedPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // Get user data from Redux store
+  const { userData, userRole } = useSelector(state => state.auth);
+  const userId = userData?.userId;
 
   // Error states
   const [contactError, setContactError] = useState("");
@@ -40,49 +43,30 @@ const ViewProfile = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
+      if (!userId) return;
+      
       setIsLoading(true);
       try {
-        const userData = Cookies.get("userData");
-        if (userData) {
-          let userInfo;
-          try {
-            userInfo = JSON.parse(userData);
-            if (!userInfo || !userInfo.userId) {
-              console.error("Invalid userInfo or missing userId:", userInfo);
-              return;
-            }
-            setUserId(userInfo.userId);
-            setUserRole(userInfo.userRole); // Set user role from cookie directly
-            console.log("Parsed userInfo:", userInfo);
-          } catch (parseError) {
-            console.error("Error parsing userData:", parseError);
-            return;
-          }
+        const { data, error } = await supabase
+          .from("users")
+          .select("*")
+          .eq("userId", userId)
+          .single();
 
-          const { data, error } = await supabase
-            .from("users")
-            .select("*")
-            .eq("userId", userInfo.userId)
-            .single();
-
-          if (error) {
-            console.error("Error fetching user profile:", error);
-            setErrorMessage("Failed to load user profile. Please try again.");
-          } else {
-            setName(data.userName);
-            setEmail(data.userEmail);
-            setContact(data.userContact || "");
-            // Only set housing unit if present in data
-            if (data.userHousingUnit) {
-              setHousingUnit(data.userHousingUnit);
-            }
-            setStoredHashedPassword(data.userPassword || "");
-            setSuccessMessage("Profile loaded successfully!");
-            setTimeout(() => setSuccessMessage(""), 3000);
-          }
+        if (error) {
+          console.error("Error fetching user profile:", error);
+          setErrorMessage("Failed to load user profile. Please try again.");
         } else {
-          console.error("No userData found in cookies.");
-          setErrorMessage("User session not found. Please log in again.");
+          setName(data.userName);
+          setEmail(data.userEmail);
+          setContact(data.userContact || "");
+          // Only set housing unit if present in data
+          if (data.userHousingUnit) {
+            setHousingUnit(data.userHousingUnit);
+          }
+          setStoredHashedPassword(data.userPassword || "");
+          setSuccessMessage("Profile loaded successfully!");
+          setTimeout(() => setSuccessMessage(""), 3000);
         }
       } catch (error) {
         console.error("Unexpected error in fetchUserProfile:", error);
@@ -93,7 +77,7 @@ const ViewProfile = () => {
     };
 
     fetchUserProfile();
-  }, []);
+  }, [userId]); 
 
   // Validate Malaysian phone number
   const validateMalaysianPhoneNumber = (phoneNumber) => {

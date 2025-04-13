@@ -1,30 +1,31 @@
 import React, { useState, useEffect } from "react";
 import { FaSearch, FaCircle } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import PageHeader from "../pageHeader";
-import supabase from "../../backend/DBClient/SupaBaseClient"; // Import your existing Supabase client
+import supabase from "../../backend/DBClient/SupaBaseClient";
 import "../index.css";
 import "./tickets.css";
 import TicketStatusEnum from "./ticketStatusEnum";
 import userRolesEnum from "../userManagement/userRolesEnum";
-import Cookies from "js-cookie";
 
 const Tickets = () => {
   const [tickets, setTickets] = useState([]); // State to store tickets from Supabase
   const [activeFilter, setActiveFilter] = useState("Not Assigned");
   const [loading, setLoading] = useState(true); // Loading state
-  const [userRole, setUserRole] = useState(null); // State to store user role
-  const [userId, setUserId] = useState(null); // State for user ID
   const [searchTerm, setSearchTerm] = useState(""); // State for search term
   const [dateFilter, setDateFilter] = useState("all"); // Default to showing all dates
   const navigate = useNavigate();
+  
+  // Get user data from Redux store
+  const { isLoggedIn, userData, userRole } = useSelector(state => state.auth);
+  const dispatch = useDispatch();
 
   // Define filters based on user role
   const getFilters = (role) => {
     if (role === userRolesEnum.RESIDENT) {
       return ["Open", "Resolved"];
     }
-
     else if (role === userRolesEnum.FACILITY_WORKER) {
       return ["Assigned", "Resolved"];
     }
@@ -37,27 +38,22 @@ const Tickets = () => {
     const fetchTickets = async () => {
       setLoading(true);
       try {
-        let userInfo;
-        const userData = Cookies.get("userData");
-    
-        if (!userData) {
+        // Check if user is logged in via Redux
+        if (!isLoggedIn || !userData) {
           console.error("No user data found");
           navigate("/login");
           return;
         }
     
-        userInfo = JSON.parse(userData);
-        console.log("User info:", userInfo); // Debug user info
+        console.log("User info:", userData); // Debug user info
     
-        setUserRole(userInfo.userRole);
-        setUserId(userInfo.userId);
-        setFilters(getFilters(userInfo.userRole));
+        setFilters(getFilters(userRole));
     
-        if (userInfo.userRole === userRolesEnum.RESIDENT) {
+        if (userRole === userRolesEnum.RESIDENT) {
           setActiveFilter("Open");
         }
 
-        if (userInfo.userRole === userRolesEnum.FACILITY_WORKER) {
+        if (userRole === userRolesEnum.FACILITY_WORKER) {
           setActiveFilter("Assigned");
         }
     
@@ -65,17 +61,17 @@ const Tickets = () => {
         let query = supabase.from("ticket").select("*");
     
         // Apply role-based filters
-        if (userInfo.userRole === userRolesEnum.ADMIN) {
+        if (userRole === userRolesEnum.ADMIN) {
           // Admin sees all tickets
           console.log("Admin query - no filters");
-        } else if (userInfo.userRole === userRolesEnum.FACILITY_WORKER) {
+        } else if (userRole === userRolesEnum.FACILITY_WORKER) {
           // Facility worker sees assigned tickets
-          query = query.eq("assignedWorkerId", userInfo.userId);
-          console.log("Worker query - filtered by assignedWorkerId:", userInfo.userId);
-        } else if (userInfo.userRole === userRolesEnum.RESIDENT) {
+          query = query.eq("assignedWorkerId", userData.userId);
+          console.log("Worker query - filtered by assignedWorkerId:", userData.userId);
+        } else if (userRole === userRolesEnum.RESIDENT) {
           // Resident sees their tickets
-          query = query.eq("reportedResidentId", userInfo.userId);
-          console.log("Resident query - filtered by reportedResidentId:", userInfo.userId);
+          query = query.eq("reportedResidentId", userData.userId);
+          console.log("Resident query - filtered by reportedResidentId:", userData.userId);
         }
     
         const { data, error } = await query;
@@ -95,7 +91,7 @@ const Tickets = () => {
     };
 
     fetchTickets();
-  }, [navigate]);
+  }, [navigate, isLoggedIn, userData, userRole]);
 
   // This function gets the start date for filtering based on the selected option
   const getDateFilterStartDate = (filterOption) => {
@@ -220,6 +216,13 @@ const Tickets = () => {
 
   const filteredTickets = filterTickets();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login");
+    }
+  }, [isLoggedIn, navigate]);
+
   return (
     <div className="tickets-page">
       <div className="content">
@@ -337,7 +340,7 @@ const Tickets = () => {
                     {new Date(ticket.submissionDate).toLocaleString()}
                   </p>
                   <Link
-                    to={`/ticket/${ticket.ticketId}`}
+                    to={`/tickets/${ticket.ticketId}`}
                     state={{ ticket }} // Pass the ticket details as state
                     className="view-ticket"
                   >

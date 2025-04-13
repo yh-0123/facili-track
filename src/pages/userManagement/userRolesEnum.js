@@ -1,3 +1,5 @@
+//src/pages/userManagement/userRolesEnum.js
+
 const USER_ROLES = {
   ADMIN: 0,
   FACILITY_WORKER: 1,

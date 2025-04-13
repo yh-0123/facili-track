@@ -46,17 +46,15 @@
 
 /* Back Button */
 .back-button {
-    width: 140px;
-    height: 45px;
     background: #d46a4f;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 1rem;
     padding: 10px 20px;
     transition: all 0.3s ease;
+    text-align: center;
 }
 
 .back-button:hover {
@@ -116,18 +114,16 @@
 /* Next Button & Submit Button*/
 .next-button,
 .submit-button {
-    width: 140px;
-    height: 45px;
     background: #d46a4f;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 1rem;
     transition: all 0.3s ease;
     text-align: center;
     padding: 10px 20px;
+   
 }
 
 .submit-button{
@@ -295,9 +291,9 @@
         margin:0;
     }
 
-    .back-button,
-    .next-button,
-    .submit-button {
+    .add-asset-page.back-button,
+    .add-asset-page.next-button,
+    .add-asset-page.submit-button {
         width: 100%;
         font-size: 12px;
         height: 40px;

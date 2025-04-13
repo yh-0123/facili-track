@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
-import supabase from "../../backend/DBClient/SupaBaseClient"; // Import Supabase client
-import Cookies from "js-cookie"; // Import js-cookie for managing cookies
-import bcrypt from "bcryptjs"; // Import bcryptjs for password verification
-import "./userLogin.css"; // Import CSS file
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { loginUser } from "../../redux/actions/authActions";
+import supabase from "../../backend/DBClient/SupaBaseClient";
+import bcrypt from "bcryptjs";
+import "./userLogin.css";
 
-const UserLogin = ({ setIsLoggedIn }) => {
+const UserLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const navigate = useNavigate(); // Initialize useNavigate for redirection
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Hide top bar and sidebar on login page
@@ -22,16 +24,13 @@ const UserLogin = ({ setIsLoggedIn }) => {
     };
   }, []);
 
- 
-
   // Function to verify the password hash
   const verifyPassword = async (plainPassword, hashedPassword) => {
-    // Returns true if passwords match, false otherwise
     return await bcrypt.compare(plainPassword, hashedPassword);
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
     
     // Clear previous error messages
     setErrorMessage("");
@@ -50,7 +49,7 @@ const UserLogin = ({ setIsLoggedIn }) => {
         .from("users")
         .select("*")
         .eq("userEmail", email)
-        .single(); // Ensure the data is not returned as an array
+        .single();
 
       if (error) {
         setErrorMessage(`Login failed: ${error.message}`);
@@ -73,20 +72,17 @@ const UserLogin = ({ setIsLoggedIn }) => {
       // Successful login
       console.log("User logged in:", data);
 
-      var userData = {
+      const userData = {
         userId: data.userId,
         userName: data.userName,
         userRole: data.userRole,
       };
       
-      // Store user session in cookies
-      Cookies.set("userData", JSON.stringify(userData), { expires: 7 }); // Store session for 7 days
-
-      // Set isLoggedIn to true
-      setIsLoggedIn(true);
+      // Dispatch Redux action to login user
+      dispatch(loginUser(userData));
 
       // Redirect to the tickets page
-      navigate("/tickets"); // Redirect to tickets page
+      navigate("/tickets");
     } catch (err) {
       setErrorMessage(err.message);
     } finally {

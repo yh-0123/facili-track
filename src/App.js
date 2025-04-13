@@ -1,11 +1,14 @@
+// src/App.js
 import {
   BrowserRouter as Router,
   Route,
   Routes,
-  Link,
   Navigate,
+  Link
 } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { loginUser } from "./redux/actions/authActions";
 import Dashboard from "./pages/dashboard";
 import FacilityAssets from "./pages/facilityAssets/facilityAssets";
 import Tickets from "./pages/tickets/tickets";
@@ -16,7 +19,6 @@ import ProfileDropdown from "./pages/userManagement/profileDropdown";
 import AddAsset from "./pages/facilityAssets/addAsset";
 import AssetDetails from "./pages/facilityAssets/assetDetails";
 import TicketDetails from "./pages/tickets/ticketDetails";
-import ResidentHome from "./pages/residentHome";
 import CreateTicket from "./pages/tickets/createTicket";
 import userRolesEnum from "./pages/userManagement/userRolesEnum";
 import Cookies from "js-cookie";
@@ -25,38 +27,23 @@ import { LoadScript } from "@react-google-maps/api";
 import "./pages/index.css";
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Track login status
+  const dispatch = useDispatch();
+  const { isLoggedIn, userRole } = useSelector((state) => state.auth);
   const [sidebarOpen, setSidebarOpen] = useState(false); // side bar state
-  const [userRole, setUserRole] = useState(null); // Track user role
-  // Add a state to track when login/logout occurs
-  const [authChangeCounter, setAuthChangeCounter] = useState(0);
-
-  // Function to update login state and trigger effect
-  const updateLoginState = (loggedIn) => {
-    setIsLoggedIn(loggedIn);
-    // Increment counter to trigger useEffect
-    setAuthChangeCounter((prev) => prev + 1);
-  };
 
   useEffect(() => {
+    // Load user data from cookies if available
     const userData = Cookies.get("userData");
-
+    
     if (userData) {
-      let userInfo;
       try {
-        userInfo = JSON.parse(userData);
-        setIsLoggedIn(true);
-        setUserRole(userInfo.userRole); // Set user role from cookie
+        const userInfo = JSON.parse(userData);
+        dispatch(loginUser(userInfo));
       } catch (parseError) {
         console.error("Error parsing userData:", parseError);
-        setIsLoggedIn(false);
-        setUserRole(null);
       }
-    } else {
-      setIsLoggedIn(false);
-      setUserRole(null);
     }
-  }, [authChangeCounter]); // Now depends on authChangeCounter which will update on login/logout
+  }, [dispatch]);
 
   return (
     <LoadScript googleMapsApiKey="AIzaSyCTl-69fRmh20qVf2u445mp9p92IZRQfxk">
@@ -124,7 +111,7 @@ function App() {
                 >
                   ☰
                 </div>
-                <ProfileDropdown updateLoginState={updateLoginState} />
+                <ProfileDropdown />
               </div>
             </>
           )}
@@ -134,17 +121,14 @@ function App() {
               <Route
                 path="/"
                 element={
-                  isLoggedIn ? (
-                    <Navigate to="/Tickets" />
-                  ) : (
-                    <UserLogin setIsLoggedIn={updateLoginState} />
-                  )
+                  isLoggedIn ? <Navigate to="/Tickets" /> : <UserLogin />
                 }
               />
               <Route
                 path="/tickets"
                 element={isLoggedIn ? <Tickets /> : <Navigate to="/" />}
               />
+              <Route path="/tickets/:id" element={<TicketDetails />} />
               {userRole === userRolesEnum.ADMIN && (
               <Route
                 path="/dashboard"
@@ -154,6 +138,7 @@ function App() {
                 path="/assets"
                 element={isLoggedIn ? <FacilityAssets /> : <Navigate to="/" />}
               />
+              <Route path="/asset-details/:id" element={<AssetDetails />} />
               <Route
                 path="/create-account"
                 element={isLoggedIn ? <CreateAccount /> : <Navigate to="/" />}
@@ -166,11 +151,9 @@ function App() {
                 path="/add-asset"
                 element={isLoggedIn ? <AddAsset /> : <Navigate to="/" />}
               />
-              <Route path="/asset-details/:id" element={<AssetDetails />} />
-              <Route path="/ticket/:id" element={<TicketDetails />} />
               <Route
                 path="/login"
-                element={<UserLogin setIsLoggedIn={updateLoginState} />}
+                element={<UserLogin />}
               />
               <Route path="/create-ticket" element={<CreateTicket />} />
             </Routes>
