@@ -6,6 +6,7 @@ import supabase from "../../backend/DBClient/SupaBaseClient";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import USER_ROLES from "./userRolesEnum"; // Import user roles enum with correct casing
 import "./viewProfile.css";
+import TermsAndConditionsPopup from "./termsAndConditionsPopup"; // Import the T&C popup component
 
 const ViewProfile = () => {
   const [userName, setName] = useState("");
@@ -16,6 +17,8 @@ const ViewProfile = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [storedHashedPassword, setStoredHashedPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [hasAgreedToTC, setHasAgreedToTC] = useState(false);
+  const [showTCPopup, setShowTCPopup] = useState(false);
 
   // Get user data from Redux store
   const { userData, userRole } = useSelector(state => state.auth);
@@ -65,6 +68,8 @@ const ViewProfile = () => {
             setHousingUnit(data.userHousingUnit);
           }
           setStoredHashedPassword(data.userPassword || "");
+          // Check if user has agreed to T&C
+          setHasAgreedToTC(data.isAgreeTnC || false);
           setSuccessMessage("Profile loaded successfully!");
           setTimeout(() => setSuccessMessage(""), 3000);
         }
@@ -119,6 +124,32 @@ const ViewProfile = () => {
     if (nameError) {
       setNameError("");
     }
+  };
+
+  // Handle edit profile button click
+  const handleEditProfile = () => {
+    // Check if user has agreed to T&C
+    if (!hasAgreedToTC) {
+      // Show T&C popup if they haven't agreed yet
+      setShowTCPopup(true);
+    } else {
+      // If they've already agreed, go directly to edit mode
+      setIsEditing(true);
+    }
+  };
+
+  // Handle T&C agreement
+  const handleTCAgree = () => {
+    setHasAgreedToTC(true);
+    setShowTCPopup(false);
+    setIsEditing(true);
+    setSuccessMessage("You have agreed to the Terms and Conditions.");
+    setTimeout(() => setSuccessMessage(""), 3000);
+  };
+
+  // Handle T&C popup close without agreeing
+  const handleTCClose = () => {
+    setShowTCPopup(false);
   };
 
   // Validate input fields before saving
@@ -336,7 +367,7 @@ const ViewProfile = () => {
       {successMessage && <p className="success-message">{successMessage}</p>}
       {errorMessage && <p className="error-message">{errorMessage}</p>}
 
-      {isLoading && !isEditing && !isPasswordModalOpen ? (
+      {isLoading && !isEditing && !isPasswordModalOpen && !showTCPopup ? (
         <div className="loading">Loading profile data...</div>
       ) : !isEditing ? (
         <div className="profile1-box">
@@ -359,7 +390,7 @@ const ViewProfile = () => {
             </p>
           )}
 
-          <button onClick={() => setIsEditing(true)} className="edit-button">
+          <button onClick={handleEditProfile} className="edit-button">
             Edit Profile
           </button>
           <button onClick={handleChangePassword} className="change-password">
@@ -433,6 +464,16 @@ const ViewProfile = () => {
         </div>
       )}
 
+      {/* Terms & Conditions Popup */}
+      {showTCPopup && (
+        <TermsAndConditionsPopup 
+          userId={userId}
+          onAgree={handleTCAgree}
+          onClose={handleTCClose}
+        />
+      )}
+
+      {/* Password Change Modal */}
       {isPasswordModalOpen && (
         <div className="modal-overlay">
           <div className="modal">
