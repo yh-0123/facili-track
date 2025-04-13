@@ -308,6 +308,12 @@
     padding-left: 10px;
     padding-right: 10px;
   }
+
+  .add-asset-btn {
+    width: 90%;
+    align-self: center;
+    margin-bottom: 10px;
+  }
   
   .search-container {
     margin-bottom: 10px;

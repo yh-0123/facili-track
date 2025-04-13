@@ -125,15 +125,25 @@ font-weight: bold;
 
 /* Responsive Design for iPhone 13 */
 @media screen and (max-width: 391px) {
+  .filter-container {
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
 .filter-buttons button {
-  font-size: 14px;
+  font-size: 12px;
   padding: 10px 15px;
-  margin-right: 10px;
+  
   margin-bottom: 10px;
   border: none;
   background-color: #e5e5e5;
   border-radius: 20px;
   cursor: pointer;
+  width:40%;
+  flex-direction: row;
   }
   
   .filter-buttons .active {
@@ -143,7 +153,7 @@ font-weight: bold;
 
   .tickets-list {
     margin-top: 20px;
-    max-height: 550px; /* Adjust height as needed */
+    max-height: 500px; /* Adjust height as needed */
     overflow-y: auto;
     padding-right: 10px; /* Prevents content from being hidden under scrollbar */
     }

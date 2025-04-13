@@ -46,7 +46,7 @@ function App() {
   }, [dispatch]);
 
   return (
-    <LoadScript googleMapsApiKey="AIzaSyCTl-69fRmh20qVf2u445mp9p92IZRQfxk">
+    <LoadScript googleMapsApiKey="api-key">
       <Router>
         <div className="app-container">
           {isLoggedIn && (
