@@ -45,7 +45,7 @@ const CreateTicket = () => {
 
   // Load the Google Maps JavaScript API
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyCTl-69fRmh20qVf2u445mp9p92IZRQfxk", // You should use environment variables for this in production
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
     libraries: libraries,
   });
 
